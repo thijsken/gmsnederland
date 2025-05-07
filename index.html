@@ -357,7 +357,7 @@
 
     <script>
         // API Configuration
-        const API_BASE_URL = 'http://localhost:8080'; // Wijzig dit naar je backend URL
+        const API_BASE_URL = 'gmsnederland-production.up.railway.app'; // Wijzig dit naar je backend URL
         let currentCallId = null;
         let currentApiKey = localStorage.getItem('apiKey') || '';
         
@@ -864,95 +864,121 @@
             window.location.reload();
         }
 
-        // Simulate incoming calls and unit movements
-        function simulateData() {
-            // Simulate new calls
-            if (Math.random() < 0.3) {
-                const callTypes = ['overval', 'brand', 'ongeluk', 'vermist', 'overlast', 'gewond'];
-                const locations = [
-                    'Stationsplein, Amsterdam', 
-                    'Damstraat, Amsterdam', 
-                    'Leidseplein, Amsterdam', 
-                    'Vondelpark, Amsterdam',
-                    'A10, km 12.3, Amsterdam'
-                ];
-                
-                const newCall = {
-                    id: 'call_' + Date.now(),
-                    type: callTypes[Math.floor(Math.random() * callTypes.length)],
-                    playerName: 'Speler_' + Math.floor(Math.random() * 1000),
-                    userId: Math.floor(Math.random() * 1000000),
-                    location: locations[Math.floor(Math.random() * locations.length)],
-                    coordinates: {
-                        x: 4.8952 + (Math.random() * 0.1 - 0.05),
-                        y: 52.3702 + (Math.random() * 0.1 - 0.05),
-                        z: 0
-                    },
-                    timestamp: Date.now(),
-                    status: 'new',
-                    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.'
-                };
-                
-                calls.push(newCall);
-                updateCalls();
-                
-                // Add marker for new call
-                const marker = L.circleMarker([newCall.coordinates.y, newCall.coordinates.x], {
-                    radius: 10,
-                    fillColor: '#ef4444',
-                    color: '#000',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(mainMap).addTo(dashboardMap);
-                
-                marker.bindPopup(`
-                    <b>112 - ${newCall.type}</b><br>
-                    ${newCall.location}<br>
-                    Speler: ${newCall.playerName}
-                `);
-                
-                emergencyMarkers[newCall.id] = marker;
-            }
-            
-            // Simulate unit movements
-            units.forEach(unit => {
-                if (unit.status === 'assigned' || unit.status === 'busy') {
-                    // Move towards assigned call
-                    const call = calls.find(c => c.id === unit.assignedCall);
-                    if (call && call.coordinates) {
-                        const dx = (call.coordinates.x - unit.location.lng) * 0.1;
-                        const dy = (call.coordinates.y - unit.location.lat) * 0.1;
-                        
-                        unit.location.lng += dx;
-                        unit.location.lat += dy;
-                        
-                        // If close enough, mark as busy
-                        if (Math.abs(dx) < 0.0005 && Math.abs(dy) < 0.0005 && unit.status === 'assigned') {
-                            unit.status = 'busy';
-                        }
-                    }
-                } else {
-                    // Random patrol movement
-                    unit.location.lng += (Math.random() * 0.001 - 0.0005);
-                    unit.location.lat += (Math.random() * 0.001 - 0.0005);
-                }
-                
-                // Update marker position
-                if (unitMarkers[unit.id]) {
-                    unitMarkers[unit.id].setLatLng([unit.location.lat, unit.location.lng]);
-                }
-            });
-            
-            // Update UI
-            updateUnits();
-            
-            // Calculate average response time (simulated)
-            if (calls.length > 0) {
-                const avgTime = Math.floor(Math.random() * 5) + 1;
-                document.getElementById('avgResponseTime').textContent = `${avgTime}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
-            }
+// Haal meldingen op van de API en voeg ze toe aan de UI
+function fetchEmergencyCallsFromApi() {
+    fetch(`${API_BASE_URL}/api/meldingen`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + API_KEY,
+            'Content-Type': 'application/json'
         }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Verwerk de meldingen die van de API komen
+        calls = data;
+
+        // Verwijder oude markers
+        Object.values(emergencyMarkers).forEach(marker => marker.remove());
+        emergencyMarkers = {};
+
+        // Voeg markers toe voor nieuwe meldingen
+        calls.forEach(call => {
+            const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
+                radius: 10,
+                fillColor: '#ef4444',
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(mainMap).addTo(dashboardMap);
+
+            marker.bindPopup(`
+                <b>112 - ${call.type}</b><br>
+                ${call.location}<br>
+                Speler: ${call.playerName}
+            `);
+
+            emergencyMarkers[call.id] = marker;
+        });
+
+        updateCalls(); // Werk de lijst van meldingen bij
+    })
+    .catch(error => {
+        console.error('Fout bij het ophalen van de meldingen van de API:', error);
+    });
+}
+
+// Haal eenheden op van de API
+function fetchUnitsFromApi() {
+    fetch(`${API_BASE_URL}/api/units`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + API_KEY,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Verwerk de eenheden die van de API komen
+        units = data;
+
+        // Verwijder oude eenheden markers
+        Object.values(unitMarkers).forEach(marker => marker.remove());
+        unitMarkers = {};
+
+        // Voeg nieuwe eenheden toe
+        units.forEach(unit => {
+            const unitMarker = L.marker([unit.location.lat, unit.location.lng])
+                .addTo(mainMap)
+                .bindPopup(`<b>Eenheid: ${unit.id}</b><br>Status: ${unit.status}`);
+
+            unitMarkers[unit.id] = unitMarker;
+        });
+
+        updateUnits(); // Werk de eenheden in de UI bij
+    })
+    .catch(error => {
+        console.error('Fout bij het ophalen van de eenheden van de API:', error);
+    });
+}
+
+// Beweeg eenheden naar toegewezen meldingen
+function moveUnits() {
+    units.forEach(unit => {
+        if (unit.status === 'assigned' || unit.status === 'busy') {
+            const call = calls.find(c => c.id === unit.assignedCall); // Zoek de toegewezen melding
+            if (call && call.coordinates) {
+                const dx = (call.coordinates.x - unit.location.lng) * 0.1;
+                const dy = (call.coordinates.y - unit.location.lat) * 0.1;
+
+                unit.location.lng += dx;
+                unit.location.lat += dy;
+
+                // Als de eenheid dichtbij genoeg is, markeer als 'busy'
+                if (Math.abs(dx) < 0.0005 && Math.abs(dy) < 0.0005 && unit.status === 'assigned') {
+                    unit.status = 'busy';
+                }
+            }
+        } else {
+            // Simuleer willekeurige beweging als de eenheid niet is toegewezen
+            unit.location.lng += (Math.random() * 0.001 - 0.0005);
+            unit.location.lat += (Math.random() * 0.001 - 0.0005);
+        }
+
+        // Update de markerpositie van de eenheid
+        if (unitMarkers[unit.id]) {
+            unitMarkers[unit.id].setLatLng([unit.location.lat, unit.location.lng]);
+        }
+    });
+}
+
+// Periodieke update van meldingen en eenheden
+setInterval(() => {
+    fetchEmergencyCallsFromApi(); // Verkrijg meldingen van de API
+    fetchUnitsFromApi(); // Verkrijg eenheden van de API
+    moveUnits(); // Beweeg eenheden naar toegewezen meldingen
+}, 5000); // Elke 5 seconden
 
         // Initialize with some sample data
         function initSampleData() {
@@ -1051,5 +1077,5 @@
             }
         };
     </script>
-<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=martingarrix/112system" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=martingarrix/test1" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
 </html>
