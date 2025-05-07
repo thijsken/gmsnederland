@@ -357,7 +357,7 @@
 
     <script>
         // API Configuration
-        const API_BASE_URL = 'gmsnederland-production.up.railway.app'; // Wijzig dit naar je backend URL
+        const API_BASE_URL = 'https://gmsnederland-production.up.railway.app'; // Wijzig dit naar je backend URL
         let currentCallId = null;
         let currentApiKey = localStorage.getItem('apiKey') || '';
         
@@ -972,6 +972,20 @@ function moveUnits() {
         }
     });
 }
+
+function fetchMeldingen() {
+    fetch('https://gmsnederland-production.up.railway.app/')  // Vervang met je daadwerkelijke endpoint
+        .then(response => response.json())
+        .then(data => {
+            // Verwerk de gegevens hier
+            console.log('Nieuwe meldingen:', data);
+            // Voeg logica toe om de meldingen weer te geven op de pagina
+        })
+        .catch(error => console.error('Fout bij het ophalen van meldingen:', error));
+}
+
+// Haal om de 5 seconden nieuwe meldingen op
+setInterval(fetchMeldingen, 5000);
 
 // Periodieke update van meldingen en eenheden
 setInterval(() => {
