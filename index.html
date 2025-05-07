@@ -973,15 +973,25 @@ function moveUnits() {
     });
 }
 
+// Haal meldingen op van de juiste API URL en verwerk ze
 function fetchMeldingen() {
-    fetch('https://gmsnederland-production.up.railway.app/')  // Vervang met je daadwerkelijke endpoint
-        .then(response => response.json())
-        .then(data => {
-            // Verwerk de gegevens hier
-            console.log('Nieuwe meldingen:', data);
-            // Voeg logica toe om de meldingen weer te geven op de pagina
-        })
-        .catch(error => console.error('Fout bij het ophalen van meldingen:', error));
+    fetch('https://gmsnederland-production.up.railway.app/api/meldingen', {  // Zorg ervoor dat dit de juiste URL is
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + API_KEY,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Verwerk de meldingen hier
+        console.log('Nieuwe meldingen:', data);
+        // Voeg logica toe om de meldingen weer te geven op de pagina
+        // Bijvoorbeeld door ze in een lijst op de UI te tonen
+    })
+    .catch(error => {
+        console.error('Fout bij het ophalen van meldingen:', error);
+    });
 }
 
 // Haal om de 5 seconden nieuwe meldingen op
