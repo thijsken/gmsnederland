@@ -7,13 +7,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Tijdelijke opslag voor meldingen
-let meldingen = [];
-
-app.get('/api/meldingen', (req, res) => {
-    res.json(meldingen);
-});
-
 // ✅ Endpoint om een melding te ontvangen via POST
 app.post('/api/meldingen', (req, res) => {
     const melding = req.body;
