@@ -10,7 +10,7 @@ app.use(express.json());
 let meldingen = [];
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.send('✅ GMS API draait!');
 });
 // ✅ Endpoint om een melding te ontvangen via POST
 app.post('/api/meldingen', (req, res) => {
