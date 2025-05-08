@@ -197,6 +197,7 @@
 <span class="text-blue-400">local</span> API_URL = <span class="text-green-400">"JOUW_API_URL"</span>
 
 <span class="text-blue-400">local</span> <span class="text-blue-400">function</span> sendEmergencyReport(player, emergencyType, location, description)
+	local url = API_URL .. "/api/meldingen"
     <span class="text-blue-400">local</span> url = API_URL .. <span class="text-green-400">"/api/meldingen"</span>
     
     <span class="text-blue-400">local</span> headers = {
@@ -877,22 +878,71 @@
                     'Vondelpark, Amsterdam',
                     'A10, km 12.3, Amsterdam'
                 ];
-                
-                const newCall = {
-                    id: 'call_' + Date.now(),
-                    type: callTypes[Math.floor(Math.random() * callTypes.length)],
-                    playerName: 'Speler_' + Math.floor(Math.random() * 1000),
-                    userId: Math.floor(Math.random() * 1000000),
-                    location: locations[Math.floor(Math.random() * locations.length)],
-                    coordinates: {
-                        x: 4.8952 + (Math.random() * 0.1 - 0.05),
-                        y: 52.3702 + (Math.random() * 0.1 - 0.05),
-                        z: 0
-                    },
-                    timestamp: Date.now(),
-                    status: 'new',
-                    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.'
-                };
+                                
+                // Functie om meldingen van de API te halen en deze te verwerken
+                function fetchEmergencyReports() {
+                    fetch(`${API_URL}/api/meldingen`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`  // Voeg je API-key toe als die nodig is
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Er is een probleem met het ophalen van de meldingen.');
+                        }
+                        return response.json();  // Parseer de JSON response van de API
+                    })
+                    .then(data => {
+                        // Verwerk de meldingen van de API en voeg ze toe aan de kaart
+                        displayEmergencyReports(data);
+                    })
+                    .catch(error => {
+                        console.error("Fout bij het ophalen van meldingen:", error);
+                    });
+                }
+
+                // Functie om de meldingen weer te geven op de kaart
+                function displayEmergencyReports(reports) {
+                    reports.forEach(report => {
+                        // Gebruik de werkelijke data van de API in plaats van simulatie
+                        const newCall = {
+                            id: report.id,  // Verkregen van de API
+                            type: report.type,  // Verkregen van de API
+                            playerName: report.playerName,  // Verkregen van de API
+                            userId: report.userId,  // Verkregen van de API
+                            location: report.location,  // Verkregen van de API
+                            coordinates: report.coordinates,  // Verkregen van de API
+                            timestamp: report.timestamp,  // Verkregen van de API
+                            status: report.status,  // Verkregen van de API
+                            description: report.description  // Verkregen van de API
+                        };
+
+                        // Voeg de marker toe aan de kaart voor de melding
+                        const marker = L.circleMarker([newCall.coordinates.y, newCall.coordinates.x], {
+                            radius: 10,
+                            fillColor: '#ef4444',
+                            color: '#000',
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).addTo(mainMap).addTo(dashboardMap);
+
+                        marker.bindPopup(`
+                            <b>112 - ${newCall.type}</b><br>
+                            ${newCall.location}<br>
+                            Speler: ${newCall.playerName}
+                        `);
+
+                        // Sla de marker op voor later gebruik
+                        emergencyMarkers[newCall.id] = marker;
+                    });
+                }
+
+                // Haal meldingen op bij het laden van de pagina
+                fetchEmergencyReports();
+
                 
                 calls.push(newCall);
                 updateCalls();
