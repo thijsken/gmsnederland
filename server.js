@@ -7,6 +7,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+let meldingen = [];
+
+app.get('/', (req, res) => {
+    res.send('✅ GMS API draait!');
+});
 // ✅ Endpoint om een melding te ontvangen via POST
 app.post('/api/meldingen', (req, res) => {
     const melding = req.body;
