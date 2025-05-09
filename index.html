@@ -666,6 +666,41 @@
         });
     }
 
+
+    function updateCallList() {
+    const callListContainer = document.getElementById('callListContainer');
+    callListContainer.innerHTML = ''; // Maak de container leeg
+
+    callList.forEach(call => {
+        const callElement = document.createElement('div');
+        callElement.classList.add('call-item');
+        callElement.innerHTML = `
+            <p><strong>Type:</strong> ${call.type}</p>
+            <p><strong>Locatie:</strong> ${call.location}</p>
+            <p><strong>Beschrijving:</strong> ${call.description}</p>
+            <button class="btn btn-info" onclick="meerInfo('${call.timestamp}')">Meer info</button>
+        `;
+        callListContainer.appendChild(callElement);
+    });
+}
+
+    function updateRecentCalls() {
+    const recentCallsContainer = document.getElementById('recentCallsContainer');
+    recentCallsContainer.innerHTML = ''; // Maak de container leeg
+
+    recentCalls.forEach(call => {
+        const callElement = document.createElement('div');
+        callElement.classList.add('call-item');
+        callElement.innerHTML = `
+            <p><strong>Type:</strong> ${call.type}</p>
+            <p><strong>Locatie:</strong> ${call.location}</p>
+            <p><strong>Beschrijving:</strong> ${call.description}</p>
+            <button class="btn btn-accept" onclick="acceptMelding('${call.timestamp}')">Accepteer</button>
+        `;
+        recentCallsContainer.appendChild(callElement);
+    });
+}
+
         function acceptCall(callId) {
             const call = calls.find(c => c.id === callId);
             if (call) {
@@ -724,7 +759,7 @@
             if (call.coordinates) {
                 const lat = call.coordinates.y || 52.3702;
                 const lng = call.coordinates.x || 4.8952;
-                mainMap.setView([lat, lng], 15);
+                mainMap.setView([call.coordinates.y, call.coordinates.x], 13);
             }
             
             document.getElementById('callDetailsModal').classList.remove('hidden');
@@ -887,62 +922,178 @@
         }
 
         function fetchEmergencyReports() {
-  fetch('https://gmsnederland-production.up.railway.app/api/meldingen')
-    .then(res => {
-      if (!res.ok) throw new Error("Fout bij ophalen meldingen");
-      return res.json();
-    })
+    fetch('https://gmsnederland-production.up.railway.app/api/meldingen')
+    .then(res => res.json())
     .then(data => {
-      console.log("✅ Meldingen:", data);
+        console.log("✅ Meldingen:", data);
+
+        // Opslaan van meldingen in localStorage
+        localStorage.setItem('meldingen', JSON.stringify(data));
+
+        // Je kunt nu doorgaan met het weergeven van meldingen op de huidige pagina
+        const container = document.getElementById('recentCalls');
+        container.innerHTML = ''; // opschonen
+
+        data.forEach(melding => {
+            const div = document.createElement('div');
+            div.className = 'bg-gray-800 p-4 rounded shadow';
+            div.classList.add('melding');
+
+            div.innerHTML = `
+                <div class="bg-white-200 p-4 rounded-lg shadow-md mb-4">
+                    <h3 class="text-lg font-semibold text-white">${melding.type}</h3>
+                    <p class="text-white-500 text-sm mb-2.5 mt-1">
+                        <strong class="text-white-400">Locatie:</strong> ${melding.location}
+                    </p>
+                    <p class="text-white-500 text-sm mb-2.5 mt-1">
+                        <strong class="text-white-400">Speler:</strong> ${melding.playerName}
+                    </p>
+                    <div class="buttons mt-2">
+                        <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${melding.timestamp}')">Accepteer</button>
+                        <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${melding.timestamp}')" data-id="${melding.timestamp}">Meer info</button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(div);
+        });
     })
     .catch(err => {
-      console.error("❌ Fout bij ophalen meldingen:", err);
+        console.error("❌ Fout bij ophalen meldingen:", err);
     });
 }
 
-        function displayEmergencyReports(reports) {
-        Object.values(emergencyMarkers).forEach(marker => mainMap.removeLayer(marker));
-        emergencyMarkers = {};
+// Je callList en recentCalls arrays moeten correct gedefinieerd zijn
+let recentCalls = [];  // Dit is waar je de recente meldingen opslaat
+let callList = [];     // Dit is waar de geaccepteerde meldingen naar toe gaan
 
-        calls = [];
-        reports.forEach(report => {
-            const call = {
-                id: report._id || report.id || crypto.randomUUID(),  // Fallback ID
-                type: report.type || 'Onbekend',
-                playerName: report.playerName || 'Onbekend',
-                location: report.location || 'Onbekende locatie',
-                coordinates: report.coordinates || { x: 4.8952, y: 52.3702 }, // Fallback op Amsterdam
-                timestamp: report.timestamp || Date.now(),
-                status: 'new',
-                description: report.description || ''
-            };
+function accepteerMelding(callId) {
+    console.log("✅ current recentCalls:", recentCalls);
+    console.log("Timestamp ontvangen:", callId);
+    console.log("recentCalls:", recentCalls); // Log de inhoud van recentCalls
 
-            console.log("📌 Verwerkte call:", call);
-            calls.push(call);
+    const callIndex = recentCalls.findIndex(c => Number(c.timestamp) === Number(callId));
+    console.log("CallIndex gevonden:", callIndex);
 
-            const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
-                radius: 10,
-                fillColor: '#ef4444',
-                color: '#000',
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(mainMap);
-
-            marker.bindPopup(`
-                <b>112 - ${call.type}</b><br>
-                ${call.location}<br>
-                Speler: ${call.playerName}
-            `);
-
-            emergencyMarkers[call.id] = marker;
-        });
-
-        updateCalls();
+    if (callIndex === -1) {
+        console.error("❌ Melding niet gevonden in recentCalls!");
+        return;
     }
 
+    const acceptedCall = recentCalls.splice(callIndex, 1)[0];
+    callList.push(acceptedCall);
 
-        function initSampleData() {
+    updateCallList();
+    updateRecentCalls();
+}
+
+
+function loadMeldingenToCallList() {
+    // Ophalen van meldingen uit localStorage
+    const meldingen = JSON.parse(localStorage.getItem('meldingen'));
+
+    if (meldingen) {
+        const callListContainer = document.getElementById('callList');
+        callListContainer.innerHTML = ''; // opschonen
+
+        meldingen.forEach(melding => {
+            const div = document.createElement('div');
+            div.className = 'bg-gray-800 p-4 rounded shadow mb-4'; // Basis styling voor de melding
+
+            div.innerHTML = `
+                <div class="bg-white-200 p-4 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold text-white">${melding.type}</h3>
+                    <p class="text-white-500 text-sm mb-2.5 mt-1">
+                        <strong class="text-white-400">Locatie:</strong> ${melding.location}
+                    </p>
+                    <p class="text-white-500 text-sm mb-2.5 mt-1">
+                        <strong class="text-white-400">Speler:</strong> ${melding.playerName}
+                    </p>
+                    <div class="buttons mt-2">
+                        <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${melding.timestamp}')">Accepteer</button>
+                        <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" data-id="${melding.timestamp}">Meer info</button>
+                    </div>
+                </div>
+            `;
+
+            callListContainer.appendChild(div);
+        });
+    } else {
+        console.error("❌ Geen meldingen gevonden in localStorage.");
+    }
+}
+
+
+// Functie om de inhoud van recentCalls en callList te legen
+function clearCalls() {
+    const recentCalls = document.getElementById('recentCalls');
+    const callList = document.getElementById('callList');
+    
+    // Leeg de containers
+    recentCalls.innerHTML = '';
+    callList.innerHTML = '';
+}
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(mainMap);
+
+// Functie om noodmeldingen weer te geven op de kaart
+function displayEmergencyReports(reports) {
+    // Verwijder oude markers
+    Object.values(emergencyMarkers).forEach(marker => mainMap.removeLayer(marker));
+    emergencyMarkers = {};
+    calls = [];
+
+    reports.forEach(report => {
+        const call = {
+            id: report.timestamp || crypto.randomUUID(),
+            type: report.type || 'Onbekend',
+            playerName: report.playerName || 'Onbekend',
+            location: report.location || 'Onbekende locatie',
+            coordinates: report.coordinates || { x: 4.8952, y: 52.3702 },
+            timestamp: report.timestamp || Date.now(),
+            status: 'new',
+            description: report.description || ''
+        };
+
+        calls.push(call);
+
+        // 🔴 Voeg marker toe
+        const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
+            radius: 10,
+            fillColor: '#ef4444',
+            color: '#000',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(mainMap);
+
+        marker.bindPopup(`
+            <b>${call.type}</b><br>
+            Locatie: ${call.location}<br>
+            Speler: ${call.playerName}<br>
+            Beschrijving: ${call.description}
+        `);
+
+        emergencyMarkers[call.id] = marker;
+    });
+
+    updateCalls();
+}
+
+function zoomToCall(callId) {
+    const call = calls.find(c => c.id === callId);
+    if (!call) {
+        console.error("❌ Melding niet gevonden!");
+        return;
+    }
+
+    mainMap.setView([call.coordinates.y, call.coordinates.x], 17); // Zoom in op locatie
+    emergencyMarkers[call.id].openPopup(); // Open popup op de marker
+}
+
+function initSampleData() {
             // Sample units
             units = [
                 { id: 'AM-POL-001', type: 'police', driver: 'Officier Jansen', status: 'available', location: { lat: 52.371, lng: 4.893 } },
@@ -1003,6 +1154,159 @@
             updateCalls();
         }
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Selecteer de 'Meer info' knoppen
+    const meerInfoButtons = document.querySelectorAll('meerinfo');
+    
+    meerInfoButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            const callId = event.target.getAttribute('data-id');
+            meerInfo(callId);
+        });
+    });
+
+    // Event listener voor het sluiten van de modal
+    document.getElementById('closeCallDetails').addEventListener('click', function() {
+        document.getElementById('callDetailsModal').classList.add('hidden');
+    });
+
+    // Event listener voor het afhandelen van de melding
+    document.getElementById('closeCallBtn').addEventListener('click', function() {
+        document.getElementById('callDetailsModal').classList.add('hidden');
+    });
+});
+
+// Gebruik UUID voor unieke ID's per melding
+function generateUUID() {
+    return crypto.randomUUID();
+}
+
+let acceptedCalls = [];
+
+// Voorbeeldfunctie om een melding toe te voegen
+function addMelding(meldingData) {
+    const melding = {
+        id: generateUUID(),
+        type: meldingData.type || 'Onbekend',
+        timestamp: Date.now(),
+        location: meldingData.location || 'Onbekend',
+        description: meldingData.description || 'Geen beschrijving',
+        playerName: meldingData.playerName || 'Onbekende speler',
+        playerId: meldingData.playerId || '???',
+        coordinates: meldingData.coordinates || { x: 0, y: 0 },
+        status: 'open'
+    };
+
+    recentCalls.push(melding);
+    renderRecentCalls();
+}
+
+// Render recentCalls in de lijst
+function renderRecentCalls() {
+    const container = document.getElementById('recentCallsList');
+    container.innerHTML = '';
+
+    recentCalls.forEach(melding => {
+        const div = document.createElement('div');
+        div.classList.add('melding-item');
+        div.innerHTML = `
+            <p>${melding.type} - ${new Date(melding.timestamp).toLocaleTimeString()}</p>
+            <button onclick="meerInfo('${melding.id}')">Meer info</button>
+            <button onclick="accepteerMelding('${melding.id}')">Accepteer</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Functie om meer informatie over een melding te tonen
+function meerInfo(callId) {
+    const call = calls.find(c => c.timestamp === callId);  // Zorg ervoor dat je hier 'timestamp' gebruikt of een andere unieke id
+    if (!call) {
+        console.error("❌ Melding niet gevonden!"); // Debugging output
+        return;
+    }
+
+    // Vul de modal met de juiste informatie
+    document.getElementById('callType').innerText = call.type || '-';
+    document.getElementById('callTime').innerText = call.timestamp || '-';
+    document.getElementById('callLocation').innerText = call.location || '-';
+    document.getElementById('callStatus').innerText = call.status || '-';
+    document.getElementById('callDescription').innerText = call.description || '-';
+    
+    // Vul speler informatie
+    document.getElementById('callPlayerName').innerText = call.playerName || '-';
+    document.getElementById('callPlayerId').innerText = 'UserID: ' + (call.playerId || '-');
+    document.getElementById('callCoordinates').innerText = 'Locatie: ' + (call.coordinates || '-');
+
+    // Vul toegewezen eenheden (indien aanwezig)
+    const assignedUnitsContainer = document.getElementById('assignedUnits');
+    assignedUnitsContainer.innerHTML = '';  // Maak de lijst leeg
+
+    if (call.assignedUnits && call.assignedUnits.length > 0) {
+        call.assignedUnits.forEach(unit => {
+            const unitElement = document.createElement('div');
+            unitElement.classList.add('bg-gray-700', 'p-2', 'rounded-lg');
+            unitElement.innerText = unit;
+            assignedUnitsContainer.appendChild(unitElement);
+        });
+    } else {
+        assignedUnitsContainer.innerHTML = '<p class="text-gray-400">Geen eenheden toegewezen.</p>';
+    }
+
+    // Maak de modal zichtbaar
+    document.getElementById('callDetailsModal').classList.remove('hidden');
+}
+
+// Functie om een melding toe te voegen aan recentCalls
+function addNewCall(melding) {
+    console.log("Nieuwe melding toegevoegd:", melding);
+    recentCalls.push(melding);
+    console.log("recentCalls na toevoegen:", recentCalls);
+}
+
+// Accepteer een melding
+function accepteerMelding(meldingId) {
+    console.log('Accepteer melding:', meldingId);
+    const index = recentCalls.findIndex(m => m.id === meldingId);
+
+    if (index === -1) return console.error('❌ Melding niet gevonden in recentCalls!');
+
+    const melding = recentCalls.splice(index, 1)[0];
+    melding.status = 'geaccepteerd';
+    acceptedCalls.push(melding);
+    renderRecentCalls();
+    renderAcceptedCalls();
+}
+
+function renderAcceptedCalls() {
+    const container = document.getElementById('acceptedCallsList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    acceptedCalls.forEach(melding => {
+        const div = document.createElement('div');
+        div.classList.add('accepted-melding');
+        div.innerHTML = `
+            <p>${melding.type} - ${new Date(melding.timestamp).toLocaleTimeString()}</p>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Sluit modal
+document.getElementById('closeCallDetails').addEventListener('click', () => {
+    document.getElementById('callDetailsModal').classList.add('hidden');
+});
+
+// Voorbeeldmelding
+let newCall = {
+    timestamp: Date.now(), // Unieke tijdstempel
+    // Andere gegevens van de melding
+};
+
+// Voeg de melding toe aan recentCalls
+addNewCall(newCall);
+
         // Initialize
         showView('dashboardView');
 
@@ -1037,6 +1341,7 @@
                 alert(`Details voor ${unit.id}\nBestuurder: ${unit.driver}\nStatus: ${getStatusName(unit.status)}\nLocatie: ${unit.location.lat.toFixed(4)}, ${unit.location.lng.toFixed(4)}`);
             }
         };
+
     </script>
 </body>
 </html>
