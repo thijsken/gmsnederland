@@ -887,25 +887,18 @@
         }
 
         function fetchEmergencyReports() {
-        fetch(`${API_BASE_URL}/api/meldingen`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Fout bij ophalen meldingen');
-            return response.json();
-        })
-        .then(data => {
-            console.log("📡 Gekregen meldingen van API:", data);
-            displayEmergencyReports(data);
-        })
-        .catch(error => {
-            console.error("Fout bij ophalen meldingen:", error);
-        });
-    }
+  fetch('https://gmsnederland-production.up.railway.app/api/meldingen')
+    .then(res => {
+      if (!res.ok) throw new Error("Fout bij ophalen meldingen");
+      return res.json();
+    })
+    .then(data => {
+      console.log("✅ Meldingen:", data);
+    })
+    .catch(err => {
+      console.error("❌ Fout bij ophalen meldingen:", err);
+    });
+}
 
         function displayEmergencyReports(reports) {
         Object.values(emergencyMarkers).forEach(marker => mainMap.removeLayer(marker));
