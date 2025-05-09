@@ -26,3 +26,57 @@ p {
 .card p:last-child {
 	margin-bottom: 0;
 }
+
+.melding-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .melding {
+    background: #fff;
+	display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+
+  .melding:hover {
+    transform: translateY(-10px);
+  }
+
+  .melding h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+  }
+
+  .melding p {
+    font-size: 1rem;
+    color: #555;
+  }
+
+  .melding .buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+
+  .button.accepteer {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .button.meerinfo {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .button:hover {
+    opacity: 0.9;
+  }
