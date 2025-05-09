@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>112 GMS - Meldkamer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/server.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #map { height: 100%; border-radius: 0.5rem; }
+        .emergency-marker {
+            background-color: #ef4444;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+        .unit-marker { border-radius: 50%; width: 15px; height: 15px; }
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen overflow-hidden">
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <div class="w-16 bg-gray-800 flex flex-col items-center py-4 space-y-4">
+            <div class="text-center">
+                <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto">
+                    <i class="fas fa-phone-alt"></i>
+                </div>
+                <span class="text-xs mt-1">112 GMS</span>
+            </div>
+            <button id="dashboardBtn" class="text-blue-400 bg-gray-700 p-2 rounded-lg">
+                <i class="fas fa-tachometer-alt"></i>
+            </button>
+            <button id="mapBtn" class="text-gray-400 hover:text-blue-400 p-2 rounded-lg">
+                <i class="fas fa-map"></i>
+            </button>
+            <button id="unitsBtn" class="text-gray-400 hover:text-blue-400 p-2 rounded-lg">
+                <i class="fas fa-ambulance"></i>
+            </button>
+            <button id="settingsBtn" class="text-gray-400 hover:text-blue-400 p-2 rounded-lg">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="mt-auto">
+                <button id="logoutBtn" class="text-gray-400 hover:text-red-400 p-2 rounded-lg">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <div class="bg-gray-800 p-4 flex justify-between items-center border-b border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold">112 Gebieds Meld Systeem</h1>
+                    <div class="flex items-center space-x-2">
+                        <span id="connectionStatus" class="h-3 w-3 bg-green-500 rounded-full"></span>
+                        <span class="text-sm">Online</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button id="notificationsBtn" class="relative">
+                            <i class="fas fa-bell"></i>
+                            <span id="notificationCount" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>Meldkamer</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-hidden">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="h-full p-4 flex flex-col">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-2">Actieve meldingen</h3>
+                            <div id="activeCallsCount" class="text-3xl font-bold text-red-500">0</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-2">Ingeschakelde eenheden</h3>
+                            <div id="activeUnitsCount" class="text-3xl font-bold text-blue-500">0</div>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-2">Gemiddelde responstijd</h3>
+                            <div id="avgResponseTime" class="text-3xl font-bold text-green-500">0:00</div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+                        <div class="bg-gray-800 rounded-lg p-4 overflow-hidden flex flex-col">
+                            <h3 class="text-lg font-semibold mb-2">Recente meldingen</h3>
+                            <div id="recentCalls" class="overflow-y-auto sidebar flex-1">
+                                <!-- Dynamisch ingeladen meldingen -->
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-4 overflow-hidden flex flex-col lg:col-span-2">
+                            <h3 class="text-lg font-semibold mb-2">Live Kaart</h3>
+                            <div id="dashboardMap" class="flex-1 rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map View -->
+                <div id="mapView" class="h-full hidden">
+                    <div class="h-full flex">
+                        <div class="flex-1 p-4">
+                            <div id="map" class="h-full"></div>
+                        </div>
+                        <div class="w-80 bg-gray-800 p-4 overflow-y-auto sidebar">
+                            <h3 class="text-lg font-semibold mb-4">Meldingen</h3>
+                            <div id="callList">
+                                <!-- Dynamisch ingeladen meldingen -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Units View -->
+                <div id="unitsView" class="h-full hidden p-4 overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Eenhedenbeheer</h2>
+                        <button id="newUnitBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Nieuwe eenheid
+                        </button>
+                    </div>
+
+                    <div id="unitsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamisch ingeladen eenheden -->
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settingsView" class="h-full hidden p-4 overflow-y-auto">
+                    <div class="max-w-3xl mx-auto">
+                        <h2 class="text-2xl font-bold mb-6">Instellingen</h2>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <h3 class="text-xl font-semibold mb-4">API Configuratie</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium mb-2">Jouw API-sleutel</label>
+                                <div class="flex">
+                                    <input type="text" id="apiKey" class="bg-gray-700 border border-gray-600 rounded-l-lg px-4 py-2 w-full" readonly>
+                                    <button id="copyApiKey" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">Deze sleutel is uniek voor jouw account. Deel deze niet met anderen.</p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium mb-2">API URL</label>
+                                <div class="flex">
+                                    <input type="text" id="apiUrl" class="bg-gray-700 border border-gray-600 rounded-l-lg px-4 py-2 w-full" readonly>
+                                    <button id="copyApiUrl" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button id="generateApiKey" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                                    <i class="fas fa-redo mr-2"></i>Nieuwe API-sleutel
+                                </button>
+                                <button id="testConnection" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                                    <i class="fas fa-plug mr-2"></i>Test verbinding
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <h3 class="text-xl font-semibold mb-4">Roblox Integratie</h3>
+                            
+                            <div class="mb-4">
+                                <h4 class="font-medium mb-2">Voorbeeldcode voor Roblox</h4>
+                                <div class="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                                    <pre id="exampleCode" class="text-sm text-gray-300">
+<span class="text-blue-400">local</span> HttpService = <span class="text-blue-400">game</span>:GetService(<span class="text-green-400">"HttpService"</span>)
+
+<span class="text-blue-400">local</span> API_KEY = <span class="text-green-400">"JOUW_API_SLEUTEL"</span>
+<span class="text-blue-400">local</span> API_URL = <span class="text-green-400">"JOUW_API_URL"</span>
+
+<span class="text-blue-400">local</span> <span class="text-blue-400">function</span> sendEmergencyReport(player, emergencyType, location, description)
+	local url = API_URL .. "/api/meldingen"
+    <span class="text-blue-400">local</span> url = API_URL .. <span class="text-green-400">"/api/meldingen"</span>
+    
+    <span class="text-blue-400">local</span> headers = {
+        [<span class="text-green-400">"Content-Type"</span>] = <span class="text-green-400">"application/json"</span>,
+        [<span class="text-green-400">"Authorization"</span>] = <span class="text-green-400">"Bearer "</span> .. API_KEY
+    }
+    
+    <span class="text-blue-400">local</span> data = {
+        playerName = player.Name,
+        userId = player.UserId,
+        emergencyType = emergencyType,
+        location = {
+            x = location.X,
+            y = location.Y,
+            z = location.Z
+        },
+        description = description,
+        timestamp = os.time()
+    }
+    
+    <span class="text-blue-400">local</span> success, response = pcall(<span class="text-blue-400">function</span>()
+        <span class="text-blue-400">return</span> HttpService:PostAsync(url, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, <span class="text-blue-400">false</span>, headers)
+    <span class="text-blue-400">end</span>)
+    
+    <span class="text-blue-400">return</span> success, response
+<span class="text-blue-400">end</span>
+
+<span class="text-blue-400">return</span> {
+    sendEmergencyReport = sendEmergencyReport
+}</pre>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">Plaats deze code in een ModuleScript en gebruik het om meldingen te versturen vanuit je Roblox game.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Unit Modal -->
+    <div id="newUnitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg w-full max-w-md">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Nieuwe eenheid toevoegen</h3>
+                <button id="closeNewUnitModal" class="text-gray-400 hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Eenheidstype</label>
+                    <select id="unitType" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 w-full">
+                        <option value="police">Politie</option>
+                        <option value="ambulance">Ambulance</option>
+                        <option value="fire">Brandweer</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Kenteken</label>
+                    <input type="text" id="unitId" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 w-full" placeholder="Bijv. AM-POL-001">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Bestuurder</label>
+                    <input type="text" id="unitDriver" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 w-full" placeholder="Naam bestuurder">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button id="cancelNewUnit" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Annuleren
+                    </button>
+                    <button id="saveNewUnit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Opslaan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Details Modal -->
+    <div id="callDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg w-full max-w-2xl">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Melding details</h3>
+                <button id="closeCallDetails" class="text-gray-400 hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400">Meldingstype</h4>
+                        <p id="callType" class="text-lg">-</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400">Tijdstip</h4>
+                        <p id="callTime" class="text-lg">-</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400">Locatie</h4>
+                        <p id="callLocation" class="text-lg">-</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400">Status</h4>
+                        <p id="callStatus" class="text-lg text-yellow-400">-</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-gray-400">Beschrijving</h4>
+                    <p id="callDescription" class="bg-gray-700 p-3 rounded-lg">-</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-gray-400">Speler informatie</h4>
+                    <div id="callPlayerInfo" class="bg-gray-700 p-3 rounded-lg">
+                        <div class="flex items-center mb-2">
+                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <p id="callPlayerName" class="font-medium">-</p>
+                                <p id="callPlayerId" class="text-xs text-gray-400">UserID: -</p>
+                            </div>
+                        </div>
+                        <div class="text-sm">
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                <span id="callCoordinates">Locatie: -</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-gray-400">Toegewezen eenheden</h4>
+                    <div id="assignedUnits" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <!-- Dynamisch ingeladen eenheden -->
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-2">
+                    <button id="assignPoliceBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-shield-alt mr-2"></i>Politie
+                    </button>
+                    <button id="assignAmbulanceBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-ambulance mr-2"></i>Ambulance
+                    </button>
+                    <button id="assignFireBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-fire-extinguisher mr-2"></i>Brandweer
+                    </button>
+                    <button id="closeCallBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-check mr-2"></i>Afhandelen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🌐 Start fetchEmergencyReports()');
+        // API Configuration
+        const API_BASE_URL = 'gmsnederland-production.up.railway.app'; // Wijzig dit naar je backend URL
+        let currentCallId = null;
+        let currentApiKey = localStorage.getItem('apiKey') || '';
+        
+        // Initialize maps
+        const dashboardMap = L.map('dashboardMap').setView([52.3702, 4.8952], 13);
+        const mainMap = L.map('map').setView([52.3702, 4.8952], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(dashboardMap);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mainMap);
+
+        // Markers and data
+        let emergencyMarkers = {};
+        let unitMarkers = {};
+        let calls = [];
+        let units = [];
+
+        // DOM Elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiUrlInput = document.getElementById('apiUrl');
+        const exampleCode = document.getElementById('exampleCode');
+        
+        // Initialize API settings
+        apiKeyInput.value = currentApiKey;
+        apiUrlInput.value = API_BASE_URL;
+        updateExampleCode();
+
+        // Navigation between views
+        document.getElementById('dashboardBtn').addEventListener('click', () => showView('dashboardView'));
+        document.getElementById('mapBtn').addEventListener('click', () => showView('mapView'));
+        document.getElementById('unitsBtn').addEventListener('click', () => showView('unitsView'));
+        document.getElementById('settingsBtn').addEventListener('click', () => showView('settingsView'));
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // Settings view buttons
+        document.getElementById('copyApiKey').addEventListener('click', copyApiKey);
+        document.getElementById('copyApiUrl').addEventListener('click', copyApiUrl);
+        document.getElementById('generateApiKey').addEventListener('click', generateApiKey);
+        document.getElementById('testConnection').addEventListener('click', testConnection);
+
+        // Unit management
+        document.getElementById('newUnitBtn').addEventListener('click', () => {
+            document.getElementById('newUnitModal').classList.remove('hidden');
+        });
+        document.getElementById('closeNewUnitModal').addEventListener('click', () => {
+            document.getElementById('newUnitModal').classList.add('hidden');
+        });
+        document.getElementById('cancelNewUnit').addEventListener('click', () => {
+            document.getElementById('newUnitModal').classList.add('hidden');
+        });
+        document.getElementById('saveNewUnit').addEventListener('click', saveNewUnit);
+
+        // Call management
+        document.getElementById('closeCallDetails').addEventListener('click', () => {
+            document.getElementById('callDetailsModal').classList.add('hidden');
+        });
+        document.getElementById('assignPoliceBtn').addEventListener('click', () => assignUnit('police'));
+        document.getElementById('assignAmbulanceBtn').addEventListener('click', () => assignUnit('ambulance'));
+        document.getElementById('assignFireBtn').addEventListener('click', () => assignUnit('fire'));
+        document.getElementById('closeCallBtn').addEventListener('click', closeCall);
+
+        // Functions
+        function showView(viewId) {
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('mapView').classList.add('hidden');
+            document.getElementById('unitsView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
+            
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            const buttons = document.querySelectorAll('#dashboardBtn, #mapBtn, #unitsBtn, #settingsBtn');
+            buttons.forEach(btn => {
+                btn.classList.remove('text-blue-400', 'bg-gray-700');
+                btn.classList.add('text-gray-400', 'hover:text-blue-400');
+            });
+            
+            if (viewId === 'dashboardView') {
+                document.getElementById('dashboardBtn').classList.add('text-blue-400', 'bg-gray-700');
+            } else if (viewId === 'mapView') {
+                document.getElementById('mapBtn').classList.add('text-blue-400', 'bg-gray-700');
+                setTimeout(() => mainMap.invalidateSize(), 100);
+            } else if (viewId === 'unitsView') {
+                document.getElementById('unitsBtn').classList.add('text-blue-400', 'bg-gray-700');
+            } else if (viewId === 'settingsView') {
+                document.getElementById('settingsBtn').classList.add('text-blue-400', 'bg-gray-700');
+            }
+        }
+
+        function updateExampleCode() {
+            exampleCode.innerHTML = exampleCode.innerHTML
+                .replace('JOUW_API_SLEUTEL', currentApiKey)
+                .replace('JOUW_API_URL', API_BASE_URL);
+        }
+
+        function copyApiKey() {
+            navigator.clipboard.writeText(apiKeyInput.value).then(() => {
+                showNotification('API-sleutel gekopieerd!');
+            });
+        }
+
+        function copyApiUrl() {
+            navigator.clipboard.writeText(apiUrlInput.value).then(() => {
+                showNotification('API URL gekopieerd!');
+            });
+        }
+
+        function generateApiKey() {
+            const newKey = 'gms_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            currentApiKey = newKey;
+            apiKeyInput.value = newKey;
+            localStorage.setItem('apiKey', newKey);
+            updateExampleCode();
+            showNotification('Nieuwe API-sleutel gegenereerd!');
+        }
+
+      function testConnection() {
+          fetch('https://gmsnederland-production.up.railway.app/', {
+              headers: {
+                  'Authorization': `Bearer ${currentApiKey}`
+              }
+          })
+          .then(response => {
+              if (response.ok) {
+                  showNotification('Verbinding succesvol!', 'success');
+                  document.getElementById('connectionStatus').classList.remove('bg-red-500');
+                  document.getElementById('connectionStatus').classList.add('bg-green-500');
+              } else {
+                  throw new Error('Verbindingsfout');
+              }
+          })
+          .catch(error => {
+              console.error("❌ Fout bij ophalen meldingen:", error);
+              showNotification('Verbindingsfout!', 'error');
+              document.getElementById('connectionStatus').classList.remove('bg-green-500');
+              document.getElementById('connectionStatus').classList.add('bg-red-500');
+          });
+      }
+
+
+        function saveNewUnit() {
+            const unitType = document.getElementById('unitType').value;
+            const unitId = document.getElementById('unitId').value;
+            const unitDriver = document.getElementById('unitDriver').value;
+            
+            if (!unitId || !unitDriver) {
+                showNotification('Vul alle velden in!', 'error');
+                return;
+            }
+            
+            const newUnit = {
+                id: unitId,
+                type: unitType,
+                driver: unitDriver,
+                status: 'available',
+                location: { lat: 52.3702 + (Math.random() * 0.02 - 0.01), lng: 4.8952 + (Math.random() * 0.02 - 0.01) }
+            };
+            
+            // In een echte implementatie zou je dit naar de backend sturen
+            units.push(newUnit);
+            updateUnits();
+            addUnitMarker(newUnit);
+            
+            document.getElementById('newUnitModal').classList.add('hidden');
+            showNotification('Eenheid toegevoegd!');
+            
+            // Reset form
+            document.getElementById('unitId').value = '';
+            document.getElementById('unitDriver').value = '';
+        }
+
+        function updateUnits() {
+            const unitsContainer = document.getElementById('unitsContainer');
+            unitsContainer.innerHTML = '';
+            
+            units.forEach(unit => {
+                const unitCard = document.createElement('div');
+                unitCard.className = 'bg-gray-800 rounded-lg p-4';
+                
+                let statusColor = 'bg-blue-900';
+                let statusText = 'text-blue-300';
+                if (unit.status === 'assigned') {
+                    statusColor = 'bg-yellow-900';
+                    statusText = 'text-yellow-300';
+                } else if (unit.status === 'busy') {
+                    statusColor = 'bg-red-900';
+                    statusText = 'text-red-300';
+                }
+                
+                let iconColor = 'bg-blue-500';
+                if (unit.type === 'ambulance') iconColor = 'bg-green-500';
+                if (unit.type === 'fire') iconColor = 'bg-yellow-500';
+                
+                unitCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold">${getUnitTypeName(unit.type)} ${unit.id}</h3>
+                            <div class="text-sm ${unit.type === 'police' ? 'text-blue-400' : unit.type === 'ambulance' ? 'text-green-400' : 'text-yellow-400'}">
+                                ${unit.id}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="text-blue-400 hover:text-blue-300" onclick="editUnit('${unit.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-400 hover:text-red-300" onclick="deleteUnit('${unit.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-sm mb-2">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>
+                            <span>${unit.driver}</span>
+                        </div>
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>
+                            <span>${unit.location.lat.toFixed(4)}, ${unit.location.lng.toFixed(4)}</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between items-center">
+                        <span class="${statusColor} ${statusText} text-xs px-2 py-1 rounded">${getStatusName(unit.status)}</span>
+                        <button class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm" onclick="showUnitDetails('${unit.id}')">
+                            Details
+                        </button>
+                    </div>
+                `;
+                
+                unitsContainer.appendChild(unitCard);
+            });
+            
+            document.getElementById('activeUnitsCount').textContent = units.length;
+        }
+
+        function getUnitTypeName(type) {
+            switch(type) {
+                case 'police': return 'Politie';
+                case 'ambulance': return 'Ambulance';
+                case 'fire': return 'Brandweer';
+                default: return 'Eenheid';
+            }
+        }
+
+        function getStatusName(status) {
+            switch(status) {
+                case 'available': return 'Beschikbaar';
+                case 'assigned': return 'Toegewezen';
+                case 'busy': return 'Ingeschakeld';
+                default: return status;
+            }
+        }
+
+        function addUnitMarker(unit) {
+            let markerColor = 'blue';
+            if (unit.type === 'ambulance') markerColor = 'green';
+            if (unit.type === 'fire') markerColor = 'orange';
+            
+            const marker = L.circleMarker([unit.location.lat, unit.location.lng], {
+                radius: 8,
+                fillColor: markerColor,
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(mainMap);
+            
+            if (unit.type === 'police') {
+                marker.addTo(dashboardMap);
+            }
+            
+            unitMarkers[unit.id] = marker;
+            
+            marker.bindPopup(`
+                <b>${getUnitTypeName(unit.type)} ${unit.id}</b><br>
+                Bestuurder: ${unit.driver}<br>
+                Status: ${getStatusName(unit.status)}
+            `);
+        }
+
+        function updateCalls() {
+        const recentCalls = document.getElementById('recentCalls');
+        recentCalls.innerHTML = '';
+
+        calls.forEach(call => {
+            const callItem = document.createElement('div');
+            callItem.className = 'bg-gray-800 p-4 rounded shadow';
+
+            callItem.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="font-semibold">112 - ${call.type}</span>
+                    <span class="text-sm text-gray-400">${formatTime(call.timestamp)}</span>
+                </div>
+                <div class="text-sm text-gray-300 mt-1">${call.location}</div>
+            `;
+
+            recentCalls.appendChild(callItem);
+        });
+    }
+
+        function acceptCall(callId) {
+            const call = calls.find(c => c.id === callId);
+            if (call) {
+                call.status = 'accepted';
+                updateCalls();
+                
+                const marker = emergencyMarkers[callId];
+                if (marker) {
+                    marker.setStyle({color: '#f59e0b'}); // Change to yellow for accepted
+                }
+                
+                showNotification(`Melding ${callId} geaccepteerd`);
+            }
+        }
+
+        function showCallDetails(callId) {
+            const call = calls.find(c => c.id === callId);
+            if (!call) return;
+            
+            currentCallId = callId;
+            
+            document.getElementById('callType').textContent = call.type;
+            document.getElementById('callTime').textContent = formatTime(call.timestamp, true);
+            document.getElementById('callLocation').textContent = call.location;
+            document.getElementById('callStatus').textContent = getCallStatusName(call.status);
+            document.getElementById('callDescription').textContent = call.description || 'Geen beschrijving beschikbaar';
+            document.getElementById('callPlayerName').textContent = call.playerName || 'Onbekend';
+            document.getElementById('callPlayerId').textContent = `UserID: ${call.userId || 'Onbekend'}`;
+            document.getElementById('callCoordinates').textContent = `Locatie: X: ${call.coordinates?.x || 0}, Y: ${call.coordinates?.y || 0}, Z: ${call.coordinates?.z || 0}`;
+            
+            // Update assigned units
+            const assignedUnitsContainer = document.getElementById('assignedUnits');
+            assignedUnitsContainer.innerHTML = '';
+            
+            const assignedUnits = units.filter(u => u.assignedCall === callId);
+            assignedUnits.forEach(unit => {
+                const unitElement = document.createElement('div');
+                unitElement.className = 'bg-gray-700 p-2 rounded flex items-center';
+                
+                let iconColor = 'bg-blue-500';
+                if (unit.type === 'ambulance') iconColor = 'bg-green-500';
+                if (unit.type === 'fire') iconColor = 'bg-yellow-500';
+                
+                unitElement.innerHTML = `
+                    <div class="w-6 h-6 ${iconColor} rounded-full mr-2"></div>
+                    <div>
+                        <p class="font-medium">${unit.id}</p>
+                        <p class="text-xs text-gray-400">${unit.driver}</p>
+                    </div>
+                `;
+                
+                assignedUnitsContainer.appendChild(unitElement);
+            });
+            
+            // Zoom to call location on map
+            if (call.coordinates) {
+                const lat = call.coordinates.y || 52.3702;
+                const lng = call.coordinates.x || 4.8952;
+                mainMap.setView([lat, lng], 15);
+            }
+            
+            document.getElementById('callDetailsModal').classList.remove('hidden');
+        }
+
+        function getCallStatusName(status) {
+            switch(status) {
+                case 'new': return 'Nieuw';
+                case 'accepted': return 'Geaccepteerd';
+                case 'assigned': return 'Toegewezen';
+                case 'closed': return 'Afgehandeld';
+                default: return status;
+            }
+        }
+
+        function assignUnit(unitType) {
+            if (!currentCallId) return;
+            
+            // Find available unit of the requested type
+            const availableUnit = units.find(u => u.type === unitType && u.status === 'available');
+            if (!availableUnit) {
+                showNotification(`Geen beschikbare ${getUnitTypeName(unitType)} eenheid!`, 'error');
+                return;
+            }
+            
+            // Assign unit to call
+            availableUnit.status = 'assigned';
+            availableUnit.assignedCall = currentCallId;
+            
+            // Update call status
+            const call = calls.find(c => c.id === currentCallId);
+            if (call) {
+                call.status = 'assigned';
+            }
+            
+            // Update UI
+            updateUnits();
+            updateCalls();
+            
+            // Update marker
+            if (unitMarkers[availableUnit.id]) {
+                unitMarkers[availableUnit.id].setStyle({color: '#f59e0b'}); // Yellow for assigned
+            }
+            
+            showNotification(`${getUnitTypeName(unitType)} eenheid ${availableUnit.id} toegewezen!`);
+        }
+
+        function closeCall() {
+            if (!currentCallId) return;
+            
+            // Find call and mark as closed
+            const call = calls.find(c => c.id === currentCallId);
+            if (call) {
+                call.status = 'closed';
+            }
+            
+            // Free up assigned units
+            units.forEach(unit => {
+                if (unit.assignedCall === currentCallId) {
+                    unit.status = 'available';
+                    unit.assignedCall = null;
+                    
+                    // Update marker
+                    if (unitMarkers[unit.id]) {
+                        let color = '#3b82f6'; // Blue for police
+                        if (unit.type === 'ambulance') color = '#10b981'; // Green for ambulance
+                        if (unit.type === 'fire') color = '#f59e0b'; // Orange for fire
+                        
+                        unitMarkers[unit.id].setStyle({color: color});
+                    }
+                }
+            });
+            
+            // Update UI
+            updateUnits();
+            updateCalls();
+            
+            // Remove emergency marker
+            if (emergencyMarkers[currentCallId]) {
+                mainMap.removeLayer(emergencyMarkers[currentCallId]);
+                dashboardMap.removeLayer(emergencyMarkers[currentCallId]);
+                delete emergencyMarkers[currentCallId];
+            }
+            
+            showNotification(`Melding ${currentCallId} afgehandeld!`);
+            document.getElementById('callDetailsModal').classList.add('hidden');
+        }
+
+        function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 60000);
+        if (diff < 1) return 'Nu';
+        if (diff < 60) return `${diff} min geleden`;
+        const uren = Math.floor(diff / 60);
+        return `${uren} uur geleden`;
+    }
+
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
+                type === 'error' ? 'bg-red-600' : 
+                type === 'success' ? 'bg-green-600' : 'bg-blue-600'
+            } text-white`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('apiKey');
+            window.location.reload();
+        }
+
+        // Simulate incoming calls and unit movements
+        function simulateData() {
+            // Simulate unit movements
+            units.forEach(unit => {
+                if (unit.status === 'assigned' || unit.status === 'busy') {
+                    // Move towards assigned call
+                    const call = calls.find(c => c.id === unit.assignedCall);
+                    if (call && call.coordinates) {
+                        const dx = (call.coordinates.x - unit.location.lng) * 0.1;
+                        const dy = (call.coordinates.y - unit.location.lat) * 0.1;
+                        
+                        unit.location.lng += dx;
+                        unit.location.lat += dy;
+                        
+                        // If close enough, mark as busy
+                        if (Math.abs(dx) < 0.0005 && Math.abs(dy) < 0.0005 && unit.status === 'assigned') {
+                            unit.status = 'busy';
+                        }
+                    }
+                } else {
+                    // Random patrol movement
+                    unit.location.lng += (Math.random() * 0.001 - 0.0005);
+                    unit.location.lat += (Math.random() * 0.001 - 0.0005);
+                }
+                
+                // Update marker position
+                if (unitMarkers[unit.id]) {
+                    unitMarkers[unit.id].setLatLng([unit.location.lat, unit.location.lng]);
+                }
+            });
+            
+            // Update UI
+            updateUnits();
+            
+            // Calculate average response time (simulated)
+            if (calls.length > 0) {
+                const avgTime = Math.floor(Math.random() * 5) + 1;
+                document.getElementById('avgResponseTime').textContent = `${avgTime}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
+            }
+        }
+
+        function fetchEmergencyReports() {
+        fetch(`${API_URL}/api/meldingen`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_KEY}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Fout bij ophalen meldingen');
+            return response.json();
+        })
+        .then(data => {
+            console.log("📡 Gekregen meldingen van API:", data);
+            displayEmergencyReports(data);
+        })
+        .catch(error => {
+            console.error("Fout bij ophalen meldingen:", error);
+        });
+    }
+
+        function displayEmergencyReports(reports) {
+        Object.values(emergencyMarkers).forEach(marker => mainMap.removeLayer(marker));
+        emergencyMarkers = {};
+
+        calls = [];
+        reports.forEach(report => {
+            const call = {
+                id: report._id || report.id || crypto.randomUUID(),  // Fallback ID
+                type: report.type || 'Onbekend',
+                playerName: report.playerName || 'Onbekend',
+                location: report.location || 'Onbekende locatie',
+                coordinates: report.coordinates || { x: 4.8952, y: 52.3702 }, // Fallback op Amsterdam
+                timestamp: report.timestamp || Date.now(),
+                status: 'new',
+                description: report.description || ''
+            };
+
+            console.log("📌 Verwerkte call:", call);
+            calls.push(call);
+
+            const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
+                radius: 10,
+                fillColor: '#ef4444',
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(mainMap);
+
+            marker.bindPopup(`
+                <b>112 - ${call.type}</b><br>
+                ${call.location}<br>
+                Speler: ${call.playerName}
+            `);
+
+            emergencyMarkers[call.id] = marker;
+        });
+
+        updateCalls();
+    }
+
+
+        function initSampleData() {
+            // Sample units
+            units = [
+                { id: 'AM-POL-001', type: 'police', driver: 'Officier Jansen', status: 'available', location: { lat: 52.371, lng: 4.893 } },
+                { id: 'AM-POL-002', type: 'police', driver: 'Agent De Jong', status: 'available', location: { lat: 52.369, lng: 4.897 } },
+                { id: 'AM-AMB-001', type: 'ambulance', driver: 'Verpleegkundige De Vries', status: 'available', location: { lat: 52.370, lng: 4.901 } },
+                { id: 'AM-BRW-001', type: 'fire', driver: 'Brandmeester Van Dijk', status: 'available', location: { lat: 52.373, lng: 4.890 } }
+            ];
+            
+            // Sample calls
+            calls = [
+                { 
+                    id: 'call_1', 
+                    type: 'overval', 
+                    playerName: 'John_Doe', 
+                    userId: 123456789, 
+                    location: 'Stationsplein 1, Amsterdam', 
+                    coordinates: { x: 4.897, y: 52.377, z: 0 },
+                    timestamp: Date.now() - 1000 * 60 * 5, // 5 minutes ago
+                    status: 'accepted',
+                    description: 'Overval bij ABN AMRO bank. Twee verdachten met wapens, één slachtoffer. Verdachten zijn gevlucht richting Damrak.'
+                },
+                { 
+                    id: 'call_2', 
+                    type: 'brand', 
+                    playerName: 'Jane_Smith', 
+                    userId: 987654321, 
+                    location: 'Damstraat 15, Amsterdam', 
+                    coordinates: { x: 4.895, y: 52.373, z: 0 },
+                    timestamp: Date.now() - 1000 * 60 * 15, // 15 minutes ago
+                    status: 'assigned',
+                    description: 'Brandmelding in appartementencomplex. Rookontwikkeling op 3e verdieping.'
+                }
+            ];
+            
+            // Add markers for sample data
+            units.forEach(unit => addUnitMarker(unit));
+            
+            calls.forEach(call => {
+                const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
+                    radius: 10,
+                    fillColor: call.status === 'new' ? '#ef4444' : call.status === 'accepted' ? '#f59e0b' : '#10b981',
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(mainMap).addTo(dashboardMap);
+                
+                marker.bindPopup(`
+                    <b>112 - ${call.type}</b><br>
+                    ${call.location}<br>
+                    Speler: ${call.playerName}
+                `);
+                
+                emergencyMarkers[call.id] = marker;
+            });
+            
+            updateUnits();
+            updateCalls();
+        }
+
+        // Initialize
+        showView('dashboardView');
+
+        fetchEmergencyReports(); // Laad meldingen van de API
+        setInterval(fetchEmergencyReports, 5000); // Vernieuw elke 5 seconden
+
+        
+        // Make functions available globally for button clicks
+        window.acceptCall = acceptCall;
+        window.showCallDetails = showCallDetails;
+        window.editUnit = (unitId) => {
+            // Implement edit functionality
+            showNotification(`Bewerk eenheid ${unitId}`);
+        };
+        
+        window.deleteUnit = (unitId) => {
+            if (confirm(`Weet je zeker dat je eenheid ${unitId} wilt verwijderen?`)) {
+                units = units.filter(u => u.id !== unitId);
+                if (unitMarkers[unitId]) {
+                    mainMap.removeLayer(unitMarkers[unitId]);
+                    dashboardMap.removeLayer(unitMarkers[unitId]);
+                    delete unitMarkers[unitId];
+                }
+                updateUnits();
+                showNotification(`Eenheid ${unitId} verwijderd`);
+            }
+        };
+        
+        window.showUnitDetails = (unitId) => {
+            const unit = units.find(u => u.id === unitId);
+            if (unit) {
+                alert(`Details voor ${unit.id}\nBestuurder: ${unit.driver}\nStatus: ${getStatusName(unit.status)}\nLocatie: ${unit.location.lat.toFixed(4)}, ${unit.location.lng.toFixed(4)}`);
+            }
+        };
+    </script>
+</body>
+</html>

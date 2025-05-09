@@ -1,18 +1,23 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
-const app = express();
 
+const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Tijdelijke opslag voor meldingen
+let meldingen = [];
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public'))); // Hiermee geef je je public map door
 
-let meldingen = [];
-
+// Root endpoint voor de dashboardpagina
 app.get('/', (req, res) => {
-    res.send('✅ GMS API draait!');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-// ✅ Endpoint om een melding te ontvangen via POST
+
+// API: Melding ontvangen via POST
 app.post('/api/meldingen', (req, res) => {
     const melding = req.body;
     if (!melding || !melding.type || !melding.location || !melding.playerName) {
@@ -26,12 +31,12 @@ app.post('/api/meldingen', (req, res) => {
     res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
 });
 
-// ✅ Endpoint om alle meldingen op te vragen
+// API: Alle meldingen ophalen via GET
 app.get('/api/meldingen', (req, res) => {
     res.json(meldingen);
 });
 
-// Start server
+// Start de server
 app.listen(PORT, () => {
-    console.log(`🚀 Server gestart op http://localhost:${PORT}`);
+    console.log(`🚀 Server draait op http://localhost:${PORT}`);
 });

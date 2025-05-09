@@ -6,7 +6,10 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.5",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "gms-api": "file:",
+    "tailwindcss": "^4.1.5"
   }
 }
