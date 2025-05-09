@@ -33,8 +33,8 @@ app.post('/api/meldingen', (req, res) => {
 
 // API: Alle meldingen ophalen via GET
 app.get('/api/meldingen', (req, res) => {
-    res.json({ meldingen: [...] });
-  });  
+    res.json(meldingen);
+});
 
 // Start de server
 app.listen(PORT, () => {
