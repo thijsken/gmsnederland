@@ -276,85 +276,86 @@
         </div>
     </div>
 
-    <!-- Call Details Modal -->
-    <div id="callDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg w-full max-w-2xl">
-            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 class="text-lg font-semibold">Melding details</h3>
-                <button id="closeCallDetails" class="text-gray-400 hover:text-gray-300">
-                    <i class="fas fa-times"></i>
-                </button>
+<!-- Call Details Modal -->
+<div id="callDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-1000 hidden">
+    <div class="bg-gray-800 rounded-lg w-full max-w-2xl">
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Melding details</h3>
+            <button id="closeCallDetails" class="text-gray-400 hover:text-gray-300">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400">Meldingstype</h4>
+                    <p id="callType" class="text-lg">-</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400">Tijdstip</h4>
+                    <p id="callTime" class="text-lg">-</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400">Locatie</h4>
+                    <p id="callLocation" class="text-lg">-</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400">Status</h4>
+                    <p id="callStatus" class="text-lg text-yellow-400">-</p>
+                </div>
             </div>
-            <div class="p-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-400">Meldingstype</h4>
-                        <p id="callType" class="text-lg">-</p>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-400">Tijdstip</h4>
-                        <p id="callTime" class="text-lg">-</p>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-400">Locatie</h4>
-                        <p id="callLocation" class="text-lg">-</p>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-400">Status</h4>
-                        <p id="callStatus" class="text-lg text-yellow-400">-</p>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <h4 class="text-sm font-medium text-gray-400">Beschrijving</h4>
-                    <p id="callDescription" class="bg-gray-700 p-3 rounded-lg">-</p>
-                </div>
-                
-                <div class="mb-4">
-                    <h4 class="text-sm font-medium text-gray-400">Speler informatie</h4>
-                    <div id="callPlayerInfo" class="bg-gray-700 p-3 rounded-lg">
-                        <div class="flex items-center mb-2">
-                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div>
-                                <p id="callPlayerName" class="font-medium">-</p>
-                                <p id="callPlayerId" class="text-xs text-gray-400">UserID: -</p>
-                            </div>
+            
+            <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-400">Beschrijving</h4>
+                <p id="callDescription" class="bg-gray-700 p-3 rounded-lg">-</p>
+            </div>
+            
+            <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-400">Speler informatie</h4>
+                <div id="callPlayerInfo" class="bg-gray-700 p-3 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user"></i>
                         </div>
-                        <div class="text-sm">
-                            <div class="flex items-center">
-                                <i class="fas fa-map-marker-alt mr-2"></i>
-                                <span id="callCoordinates">Locatie: -</span>
-                            </div>
+                        <div>
+                            <p id="callPlayerName" class="font-medium">-</p>
+                            <p id="callPlayerId" class="text-xs text-gray-400">UserID: -</p>
+                        </div>
+                    </div>
+                    <div class="text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            <span id="callCoordinates">Locatie: -</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="mb-4">
-                    <h4 class="text-sm font-medium text-gray-400">Toegewezen eenheden</h4>
-                    <div id="assignedUnits" class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <!-- Dynamisch ingeladen eenheden -->
-                    </div>
+            </div>
+            
+            <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-400">Toegewezen eenheden</h4>
+                <div id="assignedUnits" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <!-- Dynamisch ingeladen eenheden -->
                 </div>
-                
-                <div class="flex justify-end space-x-2">
-                    <button id="assignPoliceBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-shield-alt mr-2"></i>Politie
-                    </button>
-                    <button id="assignAmbulanceBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-ambulance mr-2"></i>Ambulance
-                    </button>
-                    <button id="assignFireBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-fire-extinguisher mr-2"></i>Brandweer
-                    </button>
-                    <button id="closeCallBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-check mr-2"></i>Afhandelen
-                    </button>
-                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-2">
+                <button id="assignPoliceBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-shield-alt mr-2"></i>Politie
+                </button>
+                <button id="assignAmbulanceBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-ambulance mr-2"></i>Ambulance
+                </button>
+                <button id="assignFireBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-fire-extinguisher mr-2"></i>Brandweer
+                </button>
+                <button id="closeCallBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-check mr-2"></i>Afhandelen
+                </button>
             </div>
         </div>
     </div>
+</div>
+
 
     <script>
         console.log('🌐 Start fetchEmergencyReports()');
@@ -412,6 +413,9 @@
         document.getElementById('newUnitBtn').addEventListener('click', () => {
             document.getElementById('newUnitModal').classList.remove('hidden');
         });
+                // Zorg ervoor dat de modal bovenop alles komt
+        let modal = document.getElementById("callDetailsModal");
+        modal.style.zIndex = 9999; // Zet de z-index op 9999 of een andere hoge waarde
         document.getElementById('closeNewUnitModal').addEventListener('click', () => {
             document.getElementById('newUnitModal').classList.add('hidden');
         });
@@ -505,7 +509,6 @@
               document.getElementById('connectionStatus').classList.add('bg-red-500');
           });
       }
-
 
         function saveNewUnit() {
             const unitType = document.getElementById('unitType').value;
@@ -648,8 +651,10 @@
 
         function updateCalls() {
         const recentCalls = document.getElementById('recentCalls');
-        recentCalls.innerHTML = '';
+        const callList = document.getElementById('callList');
 
+        recentCalls.innerHTML = '';
+        callList.innerHTML = '';
         calls.forEach(call => {
             const callItem = document.createElement('div');
             callItem.className = 'bg-gray-800 p-4 rounded shadow';
@@ -663,8 +668,24 @@
             `;
 
             recentCalls.appendChild(callItem);
+            callList.appendChild(callItem);
         });
     }
+
+            function acceptCall(callId) {
+            const call = calls.find(c => c.id === callId);
+            if (call) {
+                call.status = 'accepted';
+                updateCalls();
+                
+                const marker = emergencyMarkers[callId];
+                if (marker) {
+                    marker.setStyle({color: '#f59e0b'}); // Change to yellow for accepted
+                }
+                
+                showNotification(`Melding ${callId} geaccepteerd`);
+            }
+        }
 
 
     function updateCallList() {
@@ -678,7 +699,7 @@
             <p><strong>Type:</strong> ${call.type}</p>
             <p><strong>Locatie:</strong> ${call.location}</p>
             <p><strong>Beschrijving:</strong> ${call.description}</p>
-            <button class="btn btn-info" onclick="meerInfo('${call.timestamp}')">Meer info</button>
+            <button class="button meerinfo ..." onclick="meerInfo('${call.timestamp}')" data-id="${call.timestamp}">Meer info</button>
         `;
         callListContainer.appendChild(callElement);
     });
@@ -848,16 +869,30 @@
             document.getElementById('callDetailsModal').classList.add('hidden');
         }
 
-        function formatTime(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = Math.floor((now - date) / 60000);
-        if (diff < 1) return 'Nu';
-        if (diff < 60) return `${diff} min geleden`;
-        const uren = Math.floor(diff / 60);
-        return `${uren} uur geleden`;
-    }
+        function formatTime(timestamp, full = false) {
+            if (!timestamp) return 'Onbekend';
+            
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+            
+            if (full) {
+                return date.toLocaleTimeString('nl-NL') + ' - ' + date.toLocaleDateString('nl-NL');
+            }
+            
+            if (diffInMinutes < 1) return 'Nu';
+            if (diffInMinutes < 60) return `${diffInMinutes} min geleden`;
+            if (diffInMinutes < 24 * 60) return `${Math.floor(diffInMinutes / 60)} uur geleden`;
+            return `${Math.floor(diffInMinutes / (60 * 24))} dagen geleden`;
+        }
 
+        function voegNieuweMeldingToe(call) {
+    recentCalls.push(call);
+    updateRecentCalls();
+
+    // Toon visuele notificatie
+    showNotification("📟 Nieuwe melding ontvangen!", "info");
+}
 
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
@@ -865,6 +900,10 @@
                 type === 'error' ? 'bg-red-600' : 
                 type === 'success' ? 'bg-green-600' : 'bg-blue-600'
             } text-white`;
+
+            notification.style.zIndex = 9999; // <-- BELANGRIJK: zet hem bovenop alles
+
+
             notification.textContent = message;
             
             document.body.appendChild(notification);
@@ -880,88 +919,96 @@
             window.location.reload();
         }
 
-        // Simulate incoming calls and unit movements
-        function simulateData() {
-            // Simulate unit movements
-            units.forEach(unit => {
-                if (unit.status === 'assigned' || unit.status === 'busy') {
-                    // Move towards assigned call
-                    const call = calls.find(c => c.id === unit.assignedCall);
-                    if (call && call.coordinates) {
-                        const dx = (call.coordinates.x - unit.location.lng) * 0.1;
-                        const dy = (call.coordinates.y - unit.location.lat) * 0.1;
-                        
-                        unit.location.lng += dx;
-                        unit.location.lat += dy;
-                        
-                        // If close enough, mark as busy
-                        if (Math.abs(dx) < 0.0005 && Math.abs(dy) < 0.0005 && unit.status === 'assigned') {
-                            unit.status = 'busy';
-                        }
-                    }
-                } else {
-                    // Random patrol movement
-                    unit.location.lng += (Math.random() * 0.001 - 0.0005);
-                    unit.location.lat += (Math.random() * 0.001 - 0.0005);
-                }
-                
-                // Update marker position
-                if (unitMarkers[unit.id]) {
-                    unitMarkers[unit.id].setLatLng([unit.location.lat, unit.location.lng]);
-                }
-            });
-            
-            // Update UI
-            updateUnits();
-            
-            // Calculate average response time (simulated)
-            if (calls.length > 0) {
-                const avgTime = Math.floor(Math.random() * 5) + 1;
-                document.getElementById('avgResponseTime').textContent = `${avgTime}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
-            }
-        }
+let vorigeMeldingenTimestamps = [];
 
-        function fetchEmergencyReports() {
+function fetchEmergencyReports() {
     fetch('https://gmsnederland-production.up.railway.app/api/meldingen')
-    .then(res => res.json())
-    .then(data => {
-        console.log("✅ Meldingen:", data);
+        .then(res => res.json())
+        .then(data => {
+            console.log("✅ Meldingen:", data);
 
-        // Opslaan van meldingen in localStorage
-        localStorage.setItem('meldingen', JSON.stringify(data));
+            const container = document.getElementById('recentCalls');
+            if (!container) return;
+            container.innerHTML = ''; // Leegmaken
 
-        // Je kunt nu doorgaan met het weergeven van meldingen op de huidige pagina
-        const container = document.getElementById('recentCalls');
-        container.innerHTML = ''; // opschonen
+            // Check op nieuwe meldingen
+            const nieuweMeldingen = data.filter(m => !vorigeMeldingenTimestamps.includes(m.timestamp));
+            if (vorigeMeldingenTimestamps.length && nieuweMeldingen.length > 0) {
+                showNotification("📟 Nieuwe melding ontvangen!", "info");
+            }
 
-        data.forEach(melding => {
-            const div = document.createElement('div');
-            div.className = 'bg-gray-800 p-4 rounded shadow';
-            div.classList.add('melding');
+            // Update globale calls array
+            calls = data.map((item, index) => ({
+                id: item.timestamp || `call_${index}`,
+                ...item,
+                coordinates: item.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
+                status: item.status || 'new',
+                headshot: `https://www.roblox.com/headshot-thumbnail/image?userId=${item.userId || 0}&width=150&height=150&format=png`
+            }));
 
-            div.innerHTML = `
-                <div class="bg-white-200 p-4 rounded-lg shadow-md mb-4">
-                    <h3 class="text-lg font-semibold text-white">${melding.type}</h3>
-                    <p class="text-white-500 text-sm mb-2.5 mt-1">
-                        <strong class="text-white-400">Locatie:</strong> ${melding.location}
-                    </p>
-                    <p class="text-white-500 text-sm mb-2.5 mt-1">
-                        <strong class="text-white-400">Speler:</strong> ${melding.playerName}
-                    </p>
-                    <div class="buttons mt-2">
-                        <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${melding.timestamp}')">Accepteer</button>
-                        <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${melding.timestamp}')" data-id="${melding.timestamp}">Meer info</button>
+            // Voeg markers toe op kaart
+            calls.forEach(call => {
+                    const icon = L.divIcon({
+                        className: '',
+                        html: `
+                            <div style="position: relative; transform: translate(-50%, -100%); text-align: center;">
+                                <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=60&height=60&format=png"
+                                    style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ef4444;" />
+                                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+                            </div>
+                        `,
+                        iconSize: [40, 52],
+                        iconAnchor: [20, 52]
+                    });
+
+
+                        const marker = L.marker([call.coordinates.y, call.coordinates.x], {
+                            icon: icon
+                        }).addTo(mainMap).addTo(dashboardMap);
+
+                        emergencyMarkers[call.id] = marker;
+
+
+                        // optioneel: bind popup
+                        marker.bindPopup(`
+                            <b>112 - ${call.type}</b><br>
+                            ${call.location}<br>
+                            Speler: ${call.playerName}
+                        `);
+
+                // HTML weergave van de melding
+                const div = document.createElement('div');
+                div.className = 'bg-gray-800 p-4 rounded shadow mb-3';
+                div.classList.add('melding');
+
+                div.innerHTML = `
+                    <div class="bg-white-200 p-4 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-white">${call.type}</h3>
+                        <p class="text-white-500 text-sm mb-2.5 mt-1">
+                            <strong class="text-white-400">Locatie:</strong> ${call.location}
+                        </p>
+                        <p class="text-white-500 text-sm mb-2.5 mt-1">
+                            <strong class="text-white-400">Speler:</strong> ${call.playerName}
+                        </p>
+                        <div class="buttons mt-2">
+                            <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${call.timestamp}')">Accepteer</button>
+                            <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${call.timestamp}')" data-id="${call.timestamp}">Meer info</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            container.appendChild(div);
+                container.appendChild(div);
+            });
+
+            // Update timestamps lijst
+            vorigeMeldingenTimestamps = data.map(m => m.timestamp);
+        })
+        .catch(err => {
+            console.error('❌ Fout bij ophalen meldingen:', err);
+            showNotification('Kon meldingen niet ophalen', 'error');
         });
-    })
-    .catch(err => {
-        console.error("❌ Fout bij ophalen meldingen:", err);
-    });
 }
+
 
 // Je callList en recentCalls arrays moeten correct gedefinieerd zijn
 let recentCalls = [];  // Dit is waar je de recente meldingen opslaat
@@ -996,22 +1043,22 @@ function loadMeldingenToCallList() {
         const callListContainer = document.getElementById('callList');
         callListContainer.innerHTML = ''; // opschonen
 
-        meldingen.forEach(melding => {
+        calls.forEach(call => {
             const div = document.createElement('div');
             div.className = 'bg-gray-800 p-4 rounded shadow mb-4'; // Basis styling voor de melding
 
             div.innerHTML = `
                 <div class="bg-white-200 p-4 rounded-lg shadow-md">
-                    <h3 class="text-lg font-semibold text-white">${melding.type}</h3>
+                    <h3 class="text-lg font-semibold text-white">${call.type}</h3>
                     <p class="text-white-500 text-sm mb-2.5 mt-1">
-                        <strong class="text-white-400">Locatie:</strong> ${melding.location}
+                        <strong class="text-white-400">Locatie:</strong> ${call.location}
                     </p>
                     <p class="text-white-500 text-sm mb-2.5 mt-1">
-                        <strong class="text-white-400">Speler:</strong> ${melding.playerName}
+                        <strong class="text-white-400">Speler:</strong> ${call.playerName}
                     </p>
                     <div class="buttons mt-2">
-                        <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${melding.timestamp}')">Accepteer</button>
-                        <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" data-id="${melding.timestamp}">Meer info</button>
+                        <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${call.timestamp}')">Accepteer</button>
+                        <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" data-id="${call.timestamp}">Meer info</button>
                     </div>
                 </div>
             `;
@@ -1022,7 +1069,6 @@ function loadMeldingenToCallList() {
         console.error("❌ Geen meldingen gevonden in localStorage.");
     }
 }
-
 
 // Functie om de inhoud van recentCalls en callList te legen
 function clearCalls() {
@@ -1041,7 +1087,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Functie om noodmeldingen weer te geven op de kaart
 function displayEmergencyReports(reports) {
     // Verwijder oude markers
-    Object.values(emergencyMarkers).forEach(marker => mainMap.removeLayer(marker));
+    Object.values(emergencyMarkers).forEach(marker => {
+        mainMap.removeLayer(marker);
+        dashboardMap.removeLayer(marker);
+    });
     emergencyMarkers = {};
     calls = [];
 
@@ -1054,20 +1103,27 @@ function displayEmergencyReports(reports) {
             coordinates: report.coordinates || { x: 4.8952, y: 52.3702 },
             timestamp: report.timestamp || Date.now(),
             status: 'new',
-            description: report.description || ''
+            description: report.description || '',
+            headshot: report.headshot || `https://www.roblox.com/headshot-thumbnail/image?userId=${report.userId}&width=150&height=150&format=png`
         };
 
-        calls.push(call);
+        calls.push(newCall);
 
         // 🔴 Voeg marker toe
-        const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
-            radius: 10,
-            fillColor: '#ef4444',
-            color: '#000',
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-        }).addTo(mainMap);
+        const icon = L.divIcon({
+            className: '',
+            html: `
+                <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+                    <img src="${call.headshot}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
+                    <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+                </div>
+            `,
+            iconSize: [32, 42],
+            iconAnchor: [16, 42]
+        });
+
+        const marker = L.marker([call.coordinates.y, call.coordinates.x], { icon }).addTo(mainMap).addTo(dashboardMap);
+
 
         marker.bindPopup(`
             <b>${call.type}</b><br>
@@ -1080,7 +1136,13 @@ function displayEmergencyReports(reports) {
     });
 
     updateCalls();
-}
+
+                // Calculate average response time (simulated)
+            if (calls.length > 0) {
+                const avgTime = Math.floor(Math.random() * 5) + 1;
+                document.getElementById('avgResponseTime').textContent = `${avgTime}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
+            }
+        }
 
 function zoomToCall(callId) {
     const call = calls.find(c => c.id === callId);
@@ -1093,66 +1155,6 @@ function zoomToCall(callId) {
     emergencyMarkers[call.id].openPopup(); // Open popup op de marker
 }
 
-function initSampleData() {
-            // Sample units
-            units = [
-                { id: 'AM-POL-001', type: 'police', driver: 'Officier Jansen', status: 'available', location: { lat: 52.371, lng: 4.893 } },
-                { id: 'AM-POL-002', type: 'police', driver: 'Agent De Jong', status: 'available', location: { lat: 52.369, lng: 4.897 } },
-                { id: 'AM-AMB-001', type: 'ambulance', driver: 'Verpleegkundige De Vries', status: 'available', location: { lat: 52.370, lng: 4.901 } },
-                { id: 'AM-BRW-001', type: 'fire', driver: 'Brandmeester Van Dijk', status: 'available', location: { lat: 52.373, lng: 4.890 } }
-            ];
-            
-            // Sample calls
-            calls = [
-                { 
-                    id: 'call_1', 
-                    type: 'overval', 
-                    playerName: 'John_Doe', 
-                    userId: 123456789, 
-                    location: 'Stationsplein 1, Amsterdam', 
-                    coordinates: { x: 4.897, y: 52.377, z: 0 },
-                    timestamp: Date.now() - 1000 * 60 * 5, // 5 minutes ago
-                    status: 'accepted',
-                    description: 'Overval bij ABN AMRO bank. Twee verdachten met wapens, één slachtoffer. Verdachten zijn gevlucht richting Damrak.'
-                },
-                { 
-                    id: 'call_2', 
-                    type: 'brand', 
-                    playerName: 'Jane_Smith', 
-                    userId: 987654321, 
-                    location: 'Damstraat 15, Amsterdam', 
-                    coordinates: { x: 4.895, y: 52.373, z: 0 },
-                    timestamp: Date.now() - 1000 * 60 * 15, // 15 minutes ago
-                    status: 'assigned',
-                    description: 'Brandmelding in appartementencomplex. Rookontwikkeling op 3e verdieping.'
-                }
-            ];
-            
-            // Add markers for sample data
-            units.forEach(unit => addUnitMarker(unit));
-            
-            calls.forEach(call => {
-                const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], {
-                    radius: 10,
-                    fillColor: call.status === 'new' ? '#ef4444' : call.status === 'accepted' ? '#f59e0b' : '#10b981',
-                    color: '#000',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(mainMap).addTo(dashboardMap);
-                
-                marker.bindPopup(`
-                    <b>112 - ${call.type}</b><br>
-                    ${call.location}<br>
-                    Speler: ${call.playerName}
-                `);
-                
-                emergencyMarkers[call.id] = marker;
-            });
-            
-            updateUnits();
-            updateCalls();
-        }
 
 document.addEventListener('DOMContentLoaded', function() {
     // Selecteer de 'Meer info' knoppen
@@ -1185,7 +1187,7 @@ let acceptedCalls = [];
 
 // Voorbeeldfunctie om een melding toe te voegen
 function addMelding(meldingData) {
-    const melding = {
+    const call = {
         id: generateUUID(),
         type: meldingData.type || 'Onbekend',
         timestamp: Date.now(),
@@ -1197,7 +1199,7 @@ function addMelding(meldingData) {
         status: 'open'
     };
 
-    recentCalls.push(melding);
+    recentCalls.push(call);
     renderRecentCalls();
 }
 
@@ -1206,13 +1208,13 @@ function renderRecentCalls() {
     const container = document.getElementById('recentCallsList');
     container.innerHTML = '';
 
-    recentCalls.forEach(melding => {
+    recentCalls.forEach(call => {
         const div = document.createElement('div');
         div.classList.add('melding-item');
         div.innerHTML = `
-            <p>${melding.type} - ${new Date(melding.timestamp).toLocaleTimeString()}</p>
-            <button onclick="meerInfo('${melding.id}')">Meer info</button>
-            <button onclick="accepteerMelding('${melding.id}')">Accepteer</button>
+            <p>${call.type} - ${new Date(call.timestamp).toLocaleTimeString()}</p>
+            <button onclick="meerInfo('${call.id}')">Meer info</button>
+            <button onclick="accepteerMelding('${call.id}')">Accepteer</button>
         `;
         container.appendChild(div);
     });
@@ -1220,47 +1222,40 @@ function renderRecentCalls() {
 
 // Functie om meer informatie over een melding te tonen
 function meerInfo(callId) {
-    const call = calls.find(c => c.timestamp === callId);  // Zorg ervoor dat je hier 'timestamp' gebruikt of een andere unieke id
+    const call = calls.find(c => Number(c.timestamp) === Number(callId));
     if (!call) {
-        console.error("❌ Melding niet gevonden!"); // Debugging output
+        console.error("❌ Melding niet gevonden!");
         return;
     }
 
-    // Vul de modal met de juiste informatie
-    document.getElementById('callType').innerText = call.type || '-';
-    document.getElementById('callTime').innerText = call.timestamp || '-';
-    document.getElementById('callLocation').innerText = call.location || '-';
-    document.getElementById('callStatus').innerText = call.status || '-';
-    document.getElementById('callDescription').innerText = call.description || '-';
-    
-    // Vul speler informatie
-    document.getElementById('callPlayerName').innerText = call.playerName || '-';
-    document.getElementById('callPlayerId').innerText = 'UserID: ' + (call.playerId || '-');
-    document.getElementById('callCoordinates').innerText = 'Locatie: ' + (call.coordinates || '-');
+    // Vul de modal met gegevens
+    document.getElementById('callType').textContent = call.type || '-';
+    document.getElementById('callTime').textContent = new Date(call.timestamp).toLocaleString();
+    document.getElementById('callLocation').textContent = call.location || '-';
+    document.getElementById('callStatus').textContent = call.status || '-';
+    document.getElementById('callDescription').textContent = call.description || '-';
+    document.getElementById('callPlayerName').textContent = call.playerName || '-';
+    document.getElementById('callPlayerId').textContent = 'UserID: ' + (call.playerId || '-');
+    document.getElementById('callCoordinates').textContent = call.coordinates
+        ? `Locatie: ${call.coordinates.x}, ${call.coordinates.y}`
+        : 'Locatie: -';
 
-    // Vul toegewezen eenheden (indien aanwezig)
-    const assignedUnitsContainer = document.getElementById('assignedUnits');
-    assignedUnitsContainer.innerHTML = '';  // Maak de lijst leeg
-
-    if (call.assignedUnits && call.assignedUnits.length > 0) {
-        call.assignedUnits.forEach(unit => {
-            const unitElement = document.createElement('div');
-            unitElement.classList.add('bg-gray-700', 'p-2', 'rounded-lg');
-            unitElement.innerText = unit;
-            assignedUnitsContainer.appendChild(unitElement);
-        });
-    } else {
-        assignedUnitsContainer.innerHTML = '<p class="text-gray-400">Geen eenheden toegewezen.</p>';
+    // 🔍 Zoom naar locatie op de kaart (indien beschikbaar)
+    if (call.coordinates) {
+        mainMap.setView([call.coordinates.y, call.coordinates.x], 16);
+        if (emergencyMarkers[call.id]) {
+            emergencyMarkers[call.id].openPopup();
+        }
     }
 
-    // Maak de modal zichtbaar
+    // Toon de modal
     document.getElementById('callDetailsModal').classList.remove('hidden');
 }
 
 // Functie om een melding toe te voegen aan recentCalls
-function addNewCall(melding) {
-    console.log("Nieuwe melding toegevoegd:", melding);
-    recentCalls.push(melding);
+function addNewCall(call) {
+    console.log("Nieuwe melding toegevoegd:", call);
+    recentCalls.push(call);
     console.log("recentCalls na toevoegen:", recentCalls);
 }
 
@@ -1271,9 +1266,9 @@ function accepteerMelding(meldingId) {
 
     if (index === -1) return console.error('❌ Melding niet gevonden in recentCalls!');
 
-    const melding = recentCalls.splice(index, 1)[0];
-    melding.status = 'geaccepteerd';
-    acceptedCalls.push(melding);
+    const call = recentCalls.splice(index, 1)[0];
+    call.status = 'geaccepteerd';
+    acceptedCalls.push(call);
     renderRecentCalls();
     renderAcceptedCalls();
 }
@@ -1283,11 +1278,11 @@ function renderAcceptedCalls() {
     if (!container) return;
     container.innerHTML = '';
 
-    acceptedCalls.forEach(melding => {
+    acceptedCalls.forEach(call => {
         const div = document.createElement('div');
         div.classList.add('accepted-melding');
         div.innerHTML = `
-            <p>${melding.type} - ${new Date(melding.timestamp).toLocaleTimeString()}</p>
+            <p>${call.type} - ${new Date(call.timestamp).toLocaleTimeString()}</p>
         `;
         container.appendChild(div);
     });
@@ -1317,6 +1312,7 @@ addNewCall(newCall);
         // Make functions available globally for button clicks
         window.acceptCall = acceptCall;
         window.showCallDetails = showCallDetails;
+        window.meerInfo = meerInfo;
         window.editUnit = (unitId) => {
             // Implement edit functionality
             showNotification(`Bewerk eenheid ${unitId}`);
