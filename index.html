@@ -948,26 +948,29 @@ function fetchEmergencyReports() {
 
             // Voeg markers toe op kaart
             calls.forEach(call => {
-                    const icon = L.divIcon({
-                        className: '',
-                        html: `
-                            <div style="position: relative; transform: translate(-50%, -100%); text-align: center;">
-                                <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=60&height=60&format=png"
-                                    style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ef4444;" />
-                                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-                            </div>
-                        `,
-                        iconSize: [40, 52],
-                        iconAnchor: [20, 52]
-                    });
+                const icon = L.divIcon({
+                    className: 'map',
+                    html: `
+                        <div style="position: relative; transform: translate(-50%, -100%); text-align: center;">
+                            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=670101288&width=150&height=150&format=png" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ef4444;" />
+                            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+                        </div>
+                    `,
+                    iconSize: [36, 46],
+                    iconAnchor: [18, 46]
+                });
 
+            console.log(call.headshot); // Check of de afbeelding correct geladen wordt
 
-                        const marker = L.marker([call.coordinates.y, call.coordinates.x], {
-                            icon: icon
-                        }).addTo(mainMap).addTo(dashboardMap);
+            const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], { 
+                radius: 18,  // Radius van de cirkel
+                color: '#ff0000',  // Kleur van de cirkel
+                fillColor: '#ff0000',
+                fillOpacity: 0.5,
+                icon 
+            }).addTo(mainMap).addTo(dashboardMap);
 
                         emergencyMarkers[call.id] = marker;
-
 
                         // optioneel: bind popup
                         marker.bindPopup(`
@@ -975,7 +978,7 @@ function fetchEmergencyReports() {
                             ${call.location}<br>
                             Speler: ${call.playerName}
                         `);
-
+                        
                 // HTML weergave van de melding
                 const div = document.createElement('div');
                 div.className = 'bg-gray-800 p-4 rounded shadow mb-3';
