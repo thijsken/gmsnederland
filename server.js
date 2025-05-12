@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const multer = require('multer');
+const upload = multer({ dest: 'public/uploads/maps/' }); // Uploadpad voor kaarten
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,28 +40,35 @@ app.get('/api/meldingen', (req, res) => {
     res.json(meldingen);
 });
 
-// ✅ POST: Eenheid aanmaken of bijwerken
 app.post('/api/units', (req, res) => {
     const unit = req.body;
-
     if (!unit || !unit.id || !unit.type || !unit.location) {
         return res.status(400).json({ message: 'Ongeldige eenheid' });
     }
 
     const index = eenheden.findIndex(u => u.id === unit.id);
     if (index !== -1) {
-        eenheden[index] = unit; // bijwerken
+        eenheden[index] = unit;
     } else {
-        eenheden.push(unit); // nieuw
+        eenheden.push(unit);
     }
 
     res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
 });
 
-// ✅ GET: Eenheden ophalen
 app.get('/api/units', (req, res) => {
     res.json(eenheden);
 });
+app.post('/api/upload-map', upload.single('mapImage'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Geen bestand geüpload' });
+    }
+
+    const filePath = `/uploads/maps/${req.file.filename}`;
+    // eventueel: sla dit pad op in een bestand of database
+    res.status(200).json({ message: 'Kaart geüpload', imageUrl: filePath });
+});
+
 
 // 🚀 Start de server
 app.listen(PORT, () => {
