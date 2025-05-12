@@ -869,6 +869,32 @@
             document.getElementById('callDetailsModal').classList.add('hidden');
         }
 
+
+        function sluitMelding(timestamp) {
+    const ts = Number(timestamp);
+    const callIndex = calls.findIndex(c => Number(c.timestamp) === ts);
+    if (callIndex > -1) {
+        calls[callIndex].status = 'closed';
+    }
+
+    // Verwijder van de kaart
+    if (emergencyMarkers[timestamp]) {
+        mainMap.removeLayer(emergencyMarkers[timestamp]);
+        dashboardMap.removeLayer(emergencyMarkers[timestamp]);
+        delete emergencyMarkers[timestamp];
+    }
+
+    // Verwijder van de interface
+    const lijstItems = document.querySelectorAll('#callList .melding');
+    lijstItems.forEach(el => {
+        if (el.innerHTML.includes(timestamp)) {
+            el.remove();
+        }
+    });
+
+    showNotification(`Melding ${timestamp} afgehandeld`, 'success');
+}
+
         function formatTime(timestamp, full = false) {
             if (!timestamp) return 'Onbekend';
             
@@ -938,13 +964,15 @@ function fetchEmergencyReports() {
             }
 
             // Update globale calls array
-            calls = data.map((item, index) => ({
-                id: item.timestamp || `call_${index}`,
-                ...item,
-                coordinates: item.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
-                status: item.status || 'new',
-                headshot: `https://www.roblox.com/headshot-thumbnail/image?userId=${item.userId || 0}&width=150&height=150&format=png`
-            }));
+            calls = data
+                .filter(item => item.status !== 'accepted' && item.status !== 'closed') // 🔒 NIET herladen als al geaccepteerd of afgehandeld
+                .map((item, index) => ({
+                    id: item.timestamp || `call_${index}`,
+                    ...item,
+                    coordinates: item.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
+                    status: item.status || 'new'
+                }));
+
 
             // Voeg markers toe op kaart
             calls.forEach(call => {
@@ -1012,31 +1040,96 @@ function fetchEmergencyReports() {
         });
 }
 
+function fetchUnits() {
+    fetch(`${API_URL}/api/units`)
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(unit => {
+                const iconColor =
+                    unit.type === 'ambulance' ? '#10b981' :
+                    unit.type === 'fire' ? '#f59e0b' :
+                    '#3b82f6'; // default: blauw voor politie
+
+                if (unitMarkers[unit.id]) {
+                    unitMarkers[unit.id].setLatLng([unit.location.lat, unit.location.lng]);
+                } else {
+                    const marker = L.circleMarker([unit.location.lat, unit.location.lng], {
+                        radius: 8,
+                        color: iconColor,
+                        fillColor: iconColor,
+                        fillOpacity: 1
+                    }).addTo(mainMap).addTo(dashboardMap);
+
+                    marker.bindPopup(`<b>${unit.driver}</b><br>Type: ${unit.type}`);
+                    unitMarkers[unit.id] = marker;
+                }
+            });
+        })
+        .catch(err => {
+            console.error('❌ Eenheden ophalen mislukt:', err);
+        });
+}
+
+// Haal eenheden elke 5 seconden op
+setInterval(fetchUnits, 5000);
+fetchUnits(); // bij laden
+
 
 // Je callList en recentCalls arrays moeten correct gedefinieerd zijn
 let recentCalls = [];  // Dit is waar je de recente meldingen opslaat
 let callList = [];     // Dit is waar de geaccepteerde meldingen naar toe gaan
 
-function accepteerMelding(callId) {
-    console.log("✅ current recentCalls:", recentCalls);
-    console.log("Timestamp ontvangen:", callId);
-    console.log("recentCalls:", recentCalls); // Log de inhoud van recentCalls
-
-    const callIndex = recentCalls.findIndex(c => Number(c.timestamp) === Number(callId));
-    console.log("CallIndex gevonden:", callIndex);
-
-    if (callIndex === -1) {
-        console.error("❌ Melding niet gevonden in recentCalls!");
+function accepteerMelding(timestamp) {
+    const ts = Number(timestamp);
+    const index = calls.findIndex(m => Number(m.timestamp) === ts);
+    if (index === -1) {
+        console.error("❌ Melding niet gevonden in calls!");
         return;
     }
 
-    const acceptedCall = recentCalls.splice(callIndex, 1)[0];
-    callList.push(acceptedCall);
+    const call = calls[index];
 
-    updateCallList();
-    updateRecentCalls();
+    // Verwijder visueel uit recentCalls
+    const recentContainer = document.getElementById('recentCalls');
+    const meldingen = recentContainer.querySelectorAll('.melding');
+    meldingen.forEach(el => {
+        const btn = el.querySelector('button.accepteer');
+        if (btn && btn.getAttribute('onclick')?.includes(timestamp)) {
+            el.remove();
+        }
+    });
+
+    // Als al geaccepteerd of afgehandeld: verwijder alleen, doe niets meer
+    if (call.status !== 'new') {
+        console.log(`🔄 Melding ${timestamp} was al geaccepteerd (${call.status})`);
+        return;
+    }
+
+    // Zet status op geaccepteerd
+    call.status = 'accepted';
+
+    // Voeg toe aan callList
+    const callListContainer = document.getElementById('callList');
+    const div = document.createElement('div');
+    div.className = 'bg-gray-800 p-4 rounded shadow mb-3 melding';
+
+    div.innerHTML = `
+        <div class="bg-white-200 p-4 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-white">${call.type}</h3>
+            <p class="text-white-500 text-sm mb-2.5 mt-1">
+                <strong class="text-white-400">Locatie:</strong> ${call.location}
+            </p>
+            <p class="text-white-500 text-sm mb-2.5 mt-1">
+                <strong class="text-white-400">Speler:</strong> ${call.playerName}
+            </p>
+            <div class="buttons mt-2">
+                <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${call.timestamp}')" data-id="${call.timestamp}">Meer info</button>
+                <button class="button sluit bg-red-600 text-white p-2 rounded hover:bg-red-700" onclick="sluitMelding('${call.timestamp}')">Afhandelen</button>
+            </div>
+        </div>
+    `;
+    callListContainer.appendChild(div);
 }
-
 
 function loadMeldingenToCallList() {
     // Ophalen van meldingen uit localStorage
@@ -1260,20 +1353,6 @@ function addNewCall(call) {
     console.log("Nieuwe melding toegevoegd:", call);
     recentCalls.push(call);
     console.log("recentCalls na toevoegen:", recentCalls);
-}
-
-// Accepteer een melding
-function accepteerMelding(meldingId) {
-    console.log('Accepteer melding:', meldingId);
-    const index = recentCalls.findIndex(m => m.id === meldingId);
-
-    if (index === -1) return console.error('❌ Melding niet gevonden in recentCalls!');
-
-    const call = recentCalls.splice(index, 1)[0];
-    call.status = 'geaccepteerd';
-    acceptedCalls.push(call);
-    renderRecentCalls();
-    renderAcceptedCalls();
 }
 
 function renderAcceptedCalls() {
