@@ -60,6 +60,35 @@ app.get('/api/units', (req, res) => {
     res.json(eenheden);
 });
 
+// 🔊 API: Luchtalarm aansturen
+app.post('/api/luchtalarm', async (req, res) => {
+    const { actie } = req.body;
+
+    if (!actie || !['start', 'stop', 'test'].includes(actie)) {
+        return res.status(400).json({ message: 'Ongeldige actie voor luchtalarm' });
+    }
+
+    try {
+        // Hier simuleer je het aanroepen van Roblox via een externe brug
+        // Bijvoorbeeld via Open Cloud / webhook / externe queue
+        console.log(`🚨 Luchtalarm trigger: ${actie}`);
+
+        // TODO: Hier kun je Roblox triggeren via bijv. webhook of RoProxy
+        // Voorbeeld (optioneel):
+        // await fetch('https://roblox-webhook-url', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ action: actie })
+        // });
+
+        res.json({ message: `✅ Luchtalarm actie '${actie}' verstuurd` });
+    } catch (error) {
+        console.error('Fout bij luchtalarm:', error);
+        res.status(500).json({ message: 'Serverfout bij luchtalarm' });
+    }
+});
+
+
 // 🚀 Start de server
 app.listen(PORT, () => {
     console.log(`🚀 Server draait op http://localhost:${PORT}`);
