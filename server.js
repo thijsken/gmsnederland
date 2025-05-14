@@ -12,6 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ✅ Tijdelijke opslag
 let meldingen = [];
 let eenheden = [];
+let luchtalarmPalen = []; // tijdelijke opslag
 let laatsteLuchtalarmActie = null; // <-- toegevoegd
 
 // 🌍 Root endpoint voor dashboard
@@ -61,27 +62,21 @@ app.get('/api/units', (req, res) => {
     res.json(eenheden);
 });
 
-app.post('/api/luchtalarm', (req, res) => {
-    const { actie } = req.body;
-
-    if (!actie || !['start', 'stop', 'test'].includes(actie)) {
-        return res.status(400).json({ message: 'Ongeldige actie' });
+// ✅ POST: Paaldata ontvangen vanuit Roblox
+app.post('/api/luchtalarm/palen', (req, res) => {
+    const data = req.body;
+    if (!Array.isArray(data)) {
+        return res.status(400).json({ message: 'Ongeldige paaldata' });
     }
 
-    laatsteLuchtalarmActie = actie;
-
-    console.log("🔔 Dashboard triggerde luchtalarm:", actie);
-    res.json({ message: `Luchtalarm ${actie} ontvangen` });
+    luchtalarmPalen = data;
+    console.log('✅ Paaldata ontvangen van Roblox:', data);
+    res.json({ message: 'Paaldata opgeslagen' });
 });
 
-app.get('/api/luchtalarm/actie', (req, res) => {
-    if (!laatsteLuchtalarmActie) {
-        return res.json({ actie: null });
-    }
-
-    const actie = laatsteLuchtalarmActie;
-    laatsteLuchtalarmActie = null; // reset na ophalen
-    res.json({ actie });
+// ✅ GET: Paaldata opvragen door dashboard
+app.get('/api/luchtalarm/palen', (req, res) => {
+    res.json(luchtalarmPalen);
 });
 
 // 🚀 Start de server
