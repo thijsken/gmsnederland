@@ -84,6 +84,7 @@ app.get('/api/luchtalarm/palen', (req, res) => {
 
 // Voeg deze eronder toe:
 app.post('/api/luchtalarm/actie', (req, res) => {
+    console.log("Body Ontvangen:", req.body);
   const { actie, id } = req.body;
   if (!actie || !id) {
     return res.status(400).json({ message: 'Fout: actie of id ontbreekt' });
