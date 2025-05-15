@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 let meldingen = [];
 let eenheden = [];
 let luchtalarmPalen = []; // tijdelijke opslag
+let laatsteLuchtalarmActie = null;
 
 // 🌍 Root endpoint voor dashboard
 app.get('/', (req, res) => {
@@ -84,13 +85,27 @@ app.get('/api/luchtalarm/palen', (req, res) => {
 
 // Voeg deze eronder toe:
 app.post('/api/luchtalarm/actie', (req, res) => {
-    console.log("Body Ontvangen:", req.body);
   const { actie, id } = req.body;
   if (!actie || !id) {
-    return res.status(400).json({ message: 'Fout: actie of id ontbreekt' });
+    return res.status(400).json({ message: 'Actie of ID ontbreekt' });
   }
+  laatsteLuchtalarmActie = { actie, id, timestamp: Date.now() };
   console.log(`🚨 Actie '${actie}' ontvangen voor paal '${id}'`);
   res.status(200).json({ message: `Actie '${actie}' uitgevoerd op paal '${id}'` });
+});
+
+app.get('/api/luchtalarm/actie', (req, res) => {
+  if (!laatsteLuchtalarmActie) {
+    return res.status(204).send(); // Geen inhoud
+  }
+
+  const actie = laatsteLuchtalarmActie.actie;
+
+  // Reset na uitlezen, zodat Roblox niet elke keer opnieuw triggert
+  laatsteLuchtalarmActie = null;
+
+  console.log(`📡 Roblox haalt actie op: ${actie}`);
+  res.json({ actie });
 });
 
 // 🚀 Start de server
