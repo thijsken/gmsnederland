@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 let meldingen = [];
 let eenheden = [];
 let luchtalarmPalen = []; // tijdelijke opslag
+let posten = [];
 let laatsteLuchtalarmActie = null;
 
 // 🌍 Root endpoint voor dashboard
@@ -106,6 +107,20 @@ app.get('/api/luchtalarm/actie', (req, res) => {
 
   console.log(`📡 Roblox haalt actie op: ${actie}`);
   res.json({ actie });
+});
+
+app.post('/api/posten', (req, res) => {
+  const data = req.body;
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ message: 'Ongeldige posten-data' });
+  }
+  posten = data;
+  console.log('📥 Posten ontvangen:', posten.length);
+  res.json({ message: 'Posten opgeslagen' });
+});
+
+app.get('/api/posten', (req, res) => {
+  res.json(posten);
 });
 
 // 🚀 Start de server
