@@ -4,9 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>112 GMS - Meldkamer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+// 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
+function addLuchtalarmPaal(paal) {
+  console.log("📍 Marker plaatsen:", paal);
+
+  const marker = L.marker([paal.x, paal.y], {
+    icon: L.divIcon({
+      html: `<div class="text-red-600 text-xl"><i class="fas fa-broadcast-tower"></i></div>`,
+      className: "",
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    })
+  });
+
+  marker.addTo(mainMap).on("click", () => {
+    const popupHtml = `
+      <div>
+        <strong>${paal.id}</strong><br/>
+        <button onclick="triggerLuchtalarm('start', '${paal.id}')">Start</button>
+        <button onclick="triggerLuchtalarm('stop', '${paal.id}')">Stop</button>
+        <button onclick="triggerLuchtalarm('test', '${paal.id}')">Test</button>
+      </div>
+    `;
+    marker.bindPopup(popupHtml).openPopup();
+  });
+}
+
+function triggerLuchtalarm(actie, id) {
+  fetch(`${API_URL}/api/luchtalarm/palen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actie, id })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(`✅ ${data.message}`);
+  })
+  .catch(err => {
+    console.error("❌ Fout bij trigger luchtalarm:", err);
+    alert("❌ Luchtalarm mislukt");
+  });
+}
+
+// Functie om paal op de kaart te zetten
+function addLuchtalarmPaal(paal) {
+  const marker = L.marker([paal.x, paal.y], {
+    icon: L.divIcon({
+      html: `<div class="text-red-600 text-xl"><i class="fas fa-broadcast-tower"></i></div>`,
+      className: '',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    })
+  });
+
+  marker.addTo(mainMap).on('click', () => {
+    const popupHtml = `
+      <div class="text-sm space-y-2 text-white">
+        <strong>${paal.id}</strong><br/>
+        <button onclick="triggerLuchtalarm('start', '${paal.id}')" class="bg-red-600 px-2 py-1 rounded">Start</button>
+        <button onclick="triggerLuchtalarm('stop', '${paal.id}')" class="bg-gray-600 px-2 py-1 rounded">Stop</button>
+        <button onclick="triggerLuchtalarm('test', '${paal.id}')" class="bg-yellow-600 px-2 py-1 rounded">Test</button>
+      </div>
+    `;
+    marker.bindPopup(popupHtml).openPopup();
+  });
+}
+
+// Haal paaldata op en toon op kaart
+fetch(`${API_URL}/api/luchtalarm/palen`)
+  .then(res => res.json())
+  .then(palen => {
+    console.log("✅ Ontvangen paaldata van server:", palen);
+    if (Array.isArray(palen)) {
+      palen.forEach(paal => {
+        console.log("➡️ Toevoegen paal:", paal);
+        addLuchtalarmPaal();
+      });
+    }
+  })
+  .catch(err => console.error("❌ Fout bij ophalen paaldata:", err));
+
+
+// 🚀 Ophalen van paaldata uit backend
+fetch('/api/luchtalarm/palen')
+    .then(res => res.json())
+    .then(palen => {
+        if (Array.isArray(palen)) {
+            palen.forEach(paal => addLuchtalarmPaal(paal));
+        } else {
+            console.warn("Geen geldige paaldata ontvangen");
+        }
+    })
+    .catch(err => console.error('Fout bij ophalen paaldata:', err));
+
+</script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+// 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
+function addLuchtalarmPaal(paal) {
+    const icon = L.divIcon({
+        className: '',
+        html: `
+            <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+                <img src="https://cdn-icons-png.flaticon.com/512/1057/1057228.png"
+                     style="width: 28px; height: 28px;" />
+                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+            </div>
+        `,
+        iconSize: [32, 42],
+        iconAnchor: [16, 42]
+    });
+
+    const marker = L.marker([paal.y, paal.x], { icon }).addTo(mainMap).addTo(dashboardMap);
+
+    const popupContent = `
+        <div style="font-family: sans-serif; font-size: 13px; max-width: 240px;">
+            <strong>Luchtalarm Paal</strong><br>
+            Locatie: x: ${paal.x}, y: ${paal.y}<br><br>
+            <button onclick="triggerLuchtalarm('start')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px;">Start</button>
+            <button onclick="triggerLuchtalarm('stop')" style="background:#6b7280;color:white;padding:4px 8px;border:none;border-radius:4px;">Stop</button>
+            <button onclick="triggerLuchtalarm('test')" style="background:#3b82f6;color:white;padding:4px 8px;border:none;border-radius:4px;">Test</button>
+        </div>
+    `;
+    marker.bindPopup(popupContent);
+}
+
+function triggerLuchtalarm(actie) {
+    fetch('/api/luchtalarm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actie })
+    })
+    .then(res => res.json())
+    .then(data => {
+        showNotification("Luchtalarm", data.message || 'Actie uitgevoerd');
+    })
+    .catch(err => {
+        console.error('Fout bij luchtalarm trigger:', err);
+        showNotification("Luchtalarm", '⚠️ Fout bij uitvoeren actie');
+    });
+}
+
+// 🚀 Ophalen van paaldata uit backend
+fetch('/api/luchtalarm/palen')
+    .then(res => res.json())
+    .then(palen => {
+        if (Array.isArray(palen)) {
+            palen.forEach(paal => addLuchtalarmPaal(paal));
+        } else {
+            console.warn("Geen geldige paaldata ontvangen");
+        }
+    })
+    .catch(err => console.error('Fout bij ophalen paaldata:', err));
+
+</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         #map { height: 100%; border-radius: 0.5rem; }
@@ -149,9 +301,18 @@
                 <div id="settingsView" class="h-full hidden p-4 overflow-y-auto">
                     <div class="max-w-3xl mx-auto">
                         <h2 class="text-2xl font-bold mb-6">Instellingen</h2>
+
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <h3 class="text-xl font-semibold mb-4">Custom Kaart Upload (.png)</h3>
+                            <input type="file" id="mapImageInput" accept="image/png" class="mb-4 text-sm text-gray-300">
+                            <button onclick="uploadMapImage()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                                <i class="fas fa-upload mr-2"></i>Upload & Gebruik Kaart
+                            </button>
+                            <p class="text-xs text-gray-400 mt-2">Upload een .png afbeelding die als kaart wordt weergegeven.</p>
+                            </div>
                         
                         <div class="bg-gray-800 rounded-lg p-6 mb-6">
-                            <h3 class="text-xl font-semibold mb-4">API Configuratie</h3>
+                        <h3 class="text-xl font-semibold mb-4">API Configuratie</h3>
                             
                             <div class="mb-4">
                                 <label class="block text-sm font-medium mb-2">Jouw API-sleutel</label>
@@ -369,22 +530,29 @@
         let currentApiKey = localStorage.getItem('apiKey') || '';
         
         // Initialize maps
-        const dashboardMap = L.map('dashboardMap').setView([52.3702, 4.8952], 13);
-        const mainMap = L.map('map').setView([52.3702, 4.8952], 13);
+        const dashboardMap = L.map('dashboardMap', {
+    crs: L.CRS.Simple,
+    minZoom: -5,
+    maxZoom: 5,
+    zoomSnap: 0.1
+}).setView([0, 0], 0);
+        const mainMap = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -5,
+    maxZoom: 5,
+    zoomSnap: 0.1
+}).setView([0, 0], 0);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(dashboardMap);
+        
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mainMap);
+        
 
         // Markers and data
         let emergencyMarkers = {};
         let unitMarkers = {};
         let calls = [];
         let units = [];
+        let customMapOverlay = null;
 
         // DOM Elements
         const apiKeyInput = document.getElementById('apiKey');
@@ -434,6 +602,57 @@
         document.getElementById('closeCallBtn').addEventListener('click', closeCall);
 
         // Functions
+
+        
+        
+
+
+function uploadMapImage() {
+    const input = document.getElementById('mapImageInput');
+    const file = input.files[0];
+
+    if (!file || file.type !== 'image/png') {
+        showNotification('Upload een geldige PNG-afbeelding!', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imageUrl = e.target.result;
+
+        const img = new Image();
+        img.onload = function() {
+            const width = img.width;
+            const height = img.height;
+            const bounds = [[0, 0], [height, width]];
+
+            if (customMapOverlay) {
+                mainMap.removeLayer(customMapOverlay);
+                dashboardMap.removeLayer(customMapOverlay);
+            }
+
+            customMapOverlay = L.imageOverlay(imageUrl, bounds).addTo(mainMap);
+            L.imageOverlay(imageUrl, bounds).addTo(dashboardMap);
+
+            // Fit map to image
+            mainMap.setMaxBounds(bounds);
+            dashboardMap.setMaxBounds(bounds);
+
+            mainMap.fitBounds(bounds);
+            dashboardMap.fitBounds(bounds);
+
+            showNotification('📌 Kaart geladen met volledige zoomcontrole en exacte locatie!', 'success');
+        };
+
+        img.src = imageUrl;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+
+
         function showView(viewId) {
             document.getElementById('dashboardView').classList.add('hidden');
             document.getElementById('mapView').classList.add('hidden');
@@ -525,7 +744,10 @@
                 type: unitType,
                 driver: unitDriver,
                 status: 'available',
-                location: { lat: 52.3702 + (Math.random() * 0.02 - 0.01), lng: 4.8952 + (Math.random() * 0.02 - 0.01) }
+                location: {
+                lat: Math.floor(Math.random() * 1000),
+                lng: Math.floor(Math.random() * 1000)
+            }
             };
             
             // In een echte implementatie zou je dit naar de backend sturen
@@ -869,6 +1091,32 @@
             document.getElementById('callDetailsModal').classList.add('hidden');
         }
 
+
+        function sluitMelding(timestamp) {
+    const ts = Number(timestamp);
+    const callIndex = calls.findIndex(c => Number(c.timestamp) === ts);
+    if (callIndex > -1) {
+        calls[callIndex].status = 'closed';
+    }
+
+    // Verwijder van de kaart
+    if (emergencyMarkers[timestamp]) {
+        mainMap.removeLayer(emergencyMarkers[timestamp]);
+        dashboardMap.removeLayer(emergencyMarkers[timestamp]);
+        delete emergencyMarkers[timestamp];
+    }
+
+    // Verwijder van de interface
+    const lijstItems = document.querySelectorAll('#callList .melding');
+    lijstItems.forEach(el => {
+        if (el.innerHTML.includes(timestamp)) {
+            el.remove();
+        }
+    });
+
+    showNotification(`Melding ${timestamp} afgehandeld`, 'success');
+}
+
         function formatTime(timestamp, full = false) {
             if (!timestamp) return 'Onbekend';
             
@@ -922,68 +1170,70 @@
 let vorigeMeldingenTimestamps = [];
 
 function fetchEmergencyReports() {
-    fetch('https://gmsnederland-production.up.railway.app/api/meldingen')
+    fetch(`${API_URL}/api/meldingen`)
         .then(res => res.json())
         .then(data => {
-            console.log("✅ Meldingen:", data);
+            // Filter nieuwe meldingen (geen accepted of closed)
+            const nieuweMeldingen = data.filter(m => m.status === 'new');
 
-            const container = document.getElementById('recentCalls');
-            if (!container) return;
-            container.innerHTML = ''; // Leegmaken
-
-            // Check op nieuwe meldingen
-            const nieuweMeldingen = data.filter(m => !vorigeMeldingenTimestamps.includes(m.timestamp));
-            if (vorigeMeldingenTimestamps.length && nieuweMeldingen.length > 0) {
-                showNotification("📟 Nieuwe melding ontvangen!", "info");
-            }
-
-            // Update globale calls array
-            calls = data.map((item, index) => ({
+            // Update globale calls array (alleen nieuwe)
+            calls = nieuweMeldingen.map((item, index) => ({
                 id: item.timestamp || `call_${index}`,
                 ...item,
                 coordinates: item.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
-                status: item.status || 'new',
-                headshot: `https://www.roblox.com/headshot-thumbnail/image?userId=${item.userId || 0}&width=150&height=150&format=png`
+                status: item.status || 'new'
             }));
 
-            // Voeg markers toe op kaart
+            // Verwijder oude emergency markers (veilig)
+            Object.entries(emergencyMarkers).forEach(([id, marker]) => {
+                try {
+                    if (mainMap.hasLayer(marker)) mainMap.removeLayer(marker);
+                    if (dashboardMap.hasLayer(marker)) dashboardMap.removeLayer(marker);
+                } catch (e) {
+                    console.warn(`⚠️ Fout bij verwijderen marker ${id}:`, e);
+                }
+            });
+            emergencyMarkers = {};
+
+            const container = document.getElementById('recentCalls');
+            if (!container) return;
+            container.innerHTML = ''; // Maak leeg
+
             calls.forEach(call => {
-                const icon = L.divIcon({
-                    className: 'map',
-                    html: `
-                        <div style="position: relative; transform: translate(-50%, -100%); text-align: center;">
-                            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=670101288&width=150&height=150&format=png" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ef4444;" />
-                            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-                        </div>
-                    `,
-                    iconSize: [36, 46],
-                    iconAnchor: [18, 46]
-                });
+                if (emergencyMarkers[call.id]) return; // Skip als marker al bestaat
 
-            console.log(call.headshot); // Check of de afbeelding correct geladen wordt
+                // 🔴 Marker aanmaken
+                
 
-            const marker = L.circleMarker([call.coordinates.y, call.coordinates.x], { 
-                radius: 18,  // Radius van de cirkel
-                color: '#ff0000',  // Kleur van de cirkel
-                fillColor: '#ff0000',
-                fillOpacity: 0.5,
-                icon 
-            }).addTo(mainMap).addTo(dashboardMap);
+const icon = L.divIcon({
+    className: '',
+    html: `
+        <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=100&height=100&format=png"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/32';"
+                 style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
+            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+        </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 42]
+});
 
-                        emergencyMarkers[call.id] = marker;
+const marker = L.marker([call.coordinates.y, call.coordinates.x], { icon }).addTo(mainMap).addTo(dashboardMap);
 
-                        // optioneel: bind popup
-                        marker.bindPopup(`
-                            <b>112 - ${call.type}</b><br>
-                            ${call.location}<br>
-                            Speler: ${call.playerName}
-                        `);
-                        
-                // HTML weergave van de melding
+
+                marker.addTo(mainMap).addTo(dashboardMap);
+                marker.bindPopup(`
+                    <b>112 - ${call.type}</b><br>
+                    ${call.location}<br>
+                    Speler: ${call.playerName}
+                `);
+
+                emergencyMarkers[call.id] = marker;
+
+                // Meldingkaart toevoegen
                 const div = document.createElement('div');
-                div.className = 'bg-gray-800 p-4 rounded shadow mb-3';
-                div.classList.add('melding');
-
+                div.className = 'bg-gray-800 p-4 rounded shadow mb-3 melding';
                 div.innerHTML = `
                     <div class="bg-white-200 p-4 rounded-lg shadow-md">
                         <h3 class="text-lg font-semibold text-white">${call.type}</h3>
@@ -999,12 +1249,9 @@ function fetchEmergencyReports() {
                         </div>
                     </div>
                 `;
-
                 container.appendChild(div);
             });
 
-            // Update timestamps lijst
-            vorigeMeldingenTimestamps = data.map(m => m.timestamp);
         })
         .catch(err => {
             console.error('❌ Fout bij ophalen meldingen:', err);
@@ -1012,31 +1259,125 @@ function fetchEmergencyReports() {
         });
 }
 
+// Voeg dit toe aan je JS-bestand (na initialisatie van maps)
+function fetchUnits() {
+    fetch(`${API_URL}/api/units`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Verwijder oude markers
+        Object.values(unitMarkers).forEach(marker => {
+            try {
+                mainMap.removeLayer(marker);
+            } catch (e) {
+                console.warn("Kon marker niet verwijderen van mainMap:", e);
+            }
+            try {
+                dashboardMap.removeLayer(marker);
+            } catch (e) {
+                console.warn("Kon marker niet verwijderen van dashboardMap:", e);
+            }
+        });
+        unitMarkers = {};
+
+        // Voeg nieuwe markers toe
+        data.forEach(unit => {
+            const { id, location, type, driver } = unit;
+            const color = type === 'politie' ? '#3b82f6' :
+                          type === 'ambulance' ? '#10b981' :
+                          type === 'brandweer' ? '#f59e0b' : '#6b7280';
+
+            const marker = L.circleMarker([location.lat, location.lng], {
+                radius: 8,
+                fillColor: color,
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).bindPopup(`
+                <b>${type.toUpperCase()}</b><br>
+                Bestuurder: ${driver}<br>
+                Eenheid ID: ${id}
+            `);
+
+            marker.addTo(mainMap);
+            marker.addTo(dashboardMap);
+            unitMarkers[id] = marker;
+        });
+    })
+    .catch(err => {
+        console.error("❌ Eenheden ophalen mislukt:", err);
+    });
+}
+
+// Automatisch elke 5 seconden updaten
+setInterval(fetchUnits, 1000);
+
+// Haal eenheden elke 5 seconden op
+setInterval(fetchUnits, 1000);
+fetchUnits(); // bij laden
+
 
 // Je callList en recentCalls arrays moeten correct gedefinieerd zijn
 let recentCalls = [];  // Dit is waar je de recente meldingen opslaat
 let callList = [];     // Dit is waar de geaccepteerde meldingen naar toe gaan
 
-function accepteerMelding(callId) {
-    console.log("✅ current recentCalls:", recentCalls);
-    console.log("Timestamp ontvangen:", callId);
-    console.log("recentCalls:", recentCalls); // Log de inhoud van recentCalls
-
-    const callIndex = recentCalls.findIndex(c => Number(c.timestamp) === Number(callId));
-    console.log("CallIndex gevonden:", callIndex);
-
-    if (callIndex === -1) {
-        console.error("❌ Melding niet gevonden in recentCalls!");
+function accepteerMelding(timestamp) {
+    const ts = Number(timestamp);
+    const index = calls.findIndex(m => Number(m.timestamp) === ts);
+    if (index === -1) {
+        console.error("❌ Melding niet gevonden in calls!");
         return;
     }
 
-    const acceptedCall = recentCalls.splice(callIndex, 1)[0];
-    callList.push(acceptedCall);
+    const call = calls[index];
 
-    updateCallList();
-    updateRecentCalls();
+    // Verwijder visueel uit recentCalls
+    const recentContainer = document.getElementById('recentCalls');
+    const meldingen = recentContainer.querySelectorAll('.melding');
+    meldingen.forEach(el => {
+        const btn = el.querySelector('button.accepteer');
+        if (btn && btn.getAttribute('onclick')?.includes(timestamp)) {
+            el.remove();
+        }
+    });
+
+    // Als al geaccepteerd of afgehandeld: verwijder alleen, doe niets meer
+    if (call.status !== 'new') {
+        console.log(`🔄 Melding ${timestamp} was al geaccepteerd (${call.status})`);
+        return;
+    }
+
+    // Zet status op geaccepteerd
+    call.status = 'accepted';
+
+    // Voeg toe aan callList
+    const callListContainer = document.getElementById('callList');
+    const div = document.createElement('div');
+    div.className = 'bg-gray-800 p-4 rounded shadow mb-3 melding';
+
+    div.innerHTML = `
+        <div class="bg-white-200 p-4 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-white">${call.type}</h3>
+            <p class="text-white-500 text-sm mb-2.5 mt-1">
+                <strong class="text-white-400">Locatie:</strong> ${call.location}
+            </p>
+            <p class="text-white-500 text-sm mb-2.5 mt-1">
+                <strong class="text-white-400">Speler:</strong> ${call.playerName}
+            </p>
+            <div class="buttons mt-2">
+                <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${call.timestamp}')" data-id="${call.timestamp}">Meer info</button>
+                <button class="button sluit bg-red-600 text-white p-2 rounded hover:bg-red-700" onclick="sluitMelding('${call.timestamp}')">Afhandelen</button>
+            </div>
+        </div>
+    `;
+    callListContainer.appendChild(div);
 }
-
 
 function loadMeldingenToCallList() {
     // Ophalen van meldingen uit localStorage
@@ -1083,9 +1424,7 @@ function clearCalls() {
     callList.innerHTML = '';
 }
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(mainMap);
+
 
 // Functie om noodmeldingen weer te geven op de kaart
 function displayEmergencyReports(reports) {
@@ -1113,17 +1452,21 @@ function displayEmergencyReports(reports) {
         calls.push(newCall);
 
         // 🔴 Voeg marker toe
-        const icon = L.divIcon({
-            className: '',
-            html: `
-                <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
-                    <img src="${call.headshot}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
-                    <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-                </div>
-            `,
-            iconSize: [32, 42],
-            iconAnchor: [16, 42]
-        });
+        
+const icon = L.divIcon({
+    className: '',
+    html: `
+        <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=100&height=100&format=png"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/32';"
+                 style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
+            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+        </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 42]
+});
+
 
         const marker = L.marker([call.coordinates.y, call.coordinates.x], { icon }).addTo(mainMap).addTo(dashboardMap);
 
@@ -1262,20 +1605,6 @@ function addNewCall(call) {
     console.log("recentCalls na toevoegen:", recentCalls);
 }
 
-// Accepteer een melding
-function accepteerMelding(meldingId) {
-    console.log('Accepteer melding:', meldingId);
-    const index = recentCalls.findIndex(m => m.id === meldingId);
-
-    if (index === -1) return console.error('❌ Melding niet gevonden in recentCalls!');
-
-    const call = recentCalls.splice(index, 1)[0];
-    call.status = 'geaccepteerd';
-    acceptedCalls.push(call);
-    renderRecentCalls();
-    renderAcceptedCalls();
-}
-
 function renderAcceptedCalls() {
     const container = document.getElementById('acceptedCallsList');
     if (!container) return;
@@ -1341,6 +1670,64 @@ addNewCall(newCall);
             }
         };
 
-    </script>
+    
+// 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
+function addLuchtalarmPaal(paal) {
+    const icon = L.divIcon({
+        className: '',
+        html: `
+            <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+                <img src="https://cdn-icons-png.flaticon.com/512/1057/1057228.png"
+                     style="width: 28px; height: 28px;" />
+                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+            </div>
+        `,
+        iconSize: [32, 42],
+        iconAnchor: [16, 42]
+    });
+
+    const marker = L.marker([paal.y, paal.x], { icon }).addTo(mainMap).addTo(dashboardMap);
+
+    const popupContent = `
+        <div style="font-family: sans-serif; font-size: 13px; max-width: 240px;">
+            <strong>Luchtalarm Paal</strong><br>
+            Locatie: x: ${paal.x}, y: ${paal.y}<br><br>
+            <button onclick="triggerLuchtalarm('start')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px;">Start</button>
+            <button onclick="triggerLuchtalarm('stop')" style="background:#6b7280;color:white;padding:4px 8px;border:none;border-radius:4px;">Stop</button>
+            <button onclick="triggerLuchtalarm('test')" style="background:#3b82f6;color:white;padding:4px 8px;border:none;border-radius:4px;">Test</button>
+        </div>
+    `;
+    marker.bindPopup(popupContent);
+}
+
+function triggerLuchtalarm(actie) {
+    fetch('/api/luchtalarm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actie })
+    })
+    .then(res => res.json())
+    .then(data => {
+        showNotification("Luchtalarm", data.message || 'Actie uitgevoerd');
+    })
+    .catch(err => {
+        console.error('Fout bij luchtalarm trigger:', err);
+        showNotification("Luchtalarm", '⚠️ Fout bij uitvoeren actie');
+    });
+}
+
+// 🚀 Ophalen van paaldata uit backend
+fetch('/api/luchtalarm/palen')
+    .then(res => res.json())
+    .then(palen => {
+        if (Array.isArray(palen)) {
+            palen.forEach(paal => addLuchtalarmPaal(paal));
+        } else {
+            console.warn("Geen geldige paaldata ontvangen");
+        }
+    })
+    .catch(err => console.error('Fout bij ophalen paaldata:', err));
+
+</script>
 </body>
 </html>
