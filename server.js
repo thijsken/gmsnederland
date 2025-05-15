@@ -82,19 +82,15 @@ app.get('/api/luchtalarm/palen', (req, res) => {
     res.json(luchtalarmPalen);
 });
 
-// Luchtalarm actie triggeren
+// Voeg deze eronder toe:
 app.post('/api/luchtalarm/actie', (req, res) => {
-    const { actie, id } = req.body;
-    if (!actie || !id) {
-        return res.status(400).json({ message: 'Actie of ID ontbreekt' });
-    }
-
-    console.log(`🚨 Actie "${actie}" op paal "${id}" ontvangen`);
-    // Je zou hier echte logica kunnen toevoegen zoals: signalen versturen naar Roblox, logs opslaan, etc.
-
-    res.json({ message: `Actie "${actie}" uitgevoerd op paal ${id}` });
+  const { actie, id } = req.body;
+  if (!actie || !id) {
+    return res.status(400).json({ message: 'Fout: actie of id ontbreekt' });
+  }
+  console.log(`🚨 Actie '${actie}' ontvangen voor paal '${id}'`);
+  res.status(200).json({ message: `Actie '${actie}' uitgevoerd op paal '${id}'` });
 });
-
 
 // 🚀 Start de server
 app.listen(PORT, () => {
