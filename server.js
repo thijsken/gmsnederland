@@ -16,6 +16,7 @@ let luchtalarmPalen = []; // tijdelijke opslag
 let posten = [];
 let laatsteLuchtalarmActie = null;
 let laatsteAlarmTrigger = null;
+let lastPostAlarm = null;
 
 // 🌍 Root endpoint voor dashboard
 app.get('/', (req, res) => {
@@ -163,7 +164,15 @@ app.post('/api/posten/alarm', (req, res) => {
   };
 
   // Sla op voor Roblox polling
-  global.lastPostAlarm = alarmData;
+  global.lastPostAlarm = {
+    postId,
+    trigger,
+    omroep,
+    adres,   // 👈 deze moet hier echt staan!
+    info,    // 👈 en deze ook
+    voertuig,
+    timestamp: Date.now()
+  };
 
   res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
