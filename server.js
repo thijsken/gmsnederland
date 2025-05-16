@@ -125,20 +125,6 @@ app.get('/api/posten', (req, res) => {
   res.json(posten);
 });
 
-// ✅ POST: Trigger alarm voor post
-app.post('/api/posten/alarm', (req, res) => {
-  const { postId, trigger } = req.body;
-
-  if (!postId || typeof trigger !== 'boolean') {
-    return res.status(400).json({ message: 'Ongeldige data' });
-  }
-
-  laatsteAlarmTrigger = { postId, trigger };
-  console.log('🚨 Alarm aangevraagd voor post:', laatsteAlarmTrigger);
-
-  res.status(200).json({ message: 'Alarm ontvangen', data: laatsteAlarmTrigger });
-});
-
 // ✅ GET: Ophalen alarmstatus
 app.get('/api/posten/alarm', (req, res) => {
   const data = laatsteAlarmTrigger;
