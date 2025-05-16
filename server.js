@@ -149,33 +149,24 @@ app.post('/api/posten/alarm', (req, res) => {
   const { postId, trigger, omroep, adres, info, voertuig } = req.body;
 
   if (!postId || !trigger || !voertuig) {
-    return res.status(400).json({ message: '❌ postId, trigger en voertuig zijn verplicht.' });
+    return res.status(400).json({ message: 'postId, trigger en voertuig zijn verplicht' });
   }
 
-  console.log('🚨 Alarmverzoek ontvangen:');
-  console.log('Post:', postId);
-  console.log('Voertuig:', voertuig);
-  console.log('Adres:', adres);
-  console.log('Info:', info);
-  console.log('Kazerenomroep:', omroep);
-
-  // 👉 Sla het op in tijdelijke opslag (optioneel)
-  // of push naar Roblox als je dat daar ophaalt via polling
-
-  // Simpele opslag in geheugen:
-  global.lastPostAlarm = {
+  const alarmData = {
     postId,
-    voertuig,
-    adres,
-    info,
+    trigger,
     omroep,
+    adres: adres || "Geen adres",
+    info: info || "Geen info",
+    voertuig,
     timestamp: Date.now()
   };
 
-  res.status(200).json({ message: '✅ Alarm verzonden', data: global.lastPostAlarm });
+  // Sla op voor Roblox polling
+  global.lastPostAlarm = alarmData;
+
+  res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
-
-
 
 // 🚀 Start de server
 app.listen(PORT, () => {
