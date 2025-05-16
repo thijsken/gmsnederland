@@ -140,8 +140,11 @@ app.post('/api/posten/alarm', (req, res) => {
 
 // ✅ GET: Ophalen alarmstatus
 app.get('/api/posten/alarm', (req, res) => {
-  res.json(laatsteAlarmTrigger || {});
+  const data = laatsteAlarmTrigger;
+  laatsteAlarmTrigger = null; // 🧹 Reset na ophalen
+  res.json(data || {});
 });
+
 
 // 🚀 Start de server
 app.listen(PORT, () => {
