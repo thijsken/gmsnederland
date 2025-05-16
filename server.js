@@ -9,129 +9,120 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Tijdelijke opslag
+// 🧠 Tijdelijke opslag
 let meldingen = [];
 let eenheden = [];
-let luchtalarmPalen = []; // tijdelijke opslag
+let luchtalarmPalen = [];
 let posten = [];
 let laatsteLuchtalarmActie = null;
-let laatsteAlarmTrigger = null;
 let lastPostAlarm = null;
 
-// 🌍 Root endpoint voor dashboard
+// 🌍 Dashboard root
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 📥 POST: Melding ontvangen
 app.post('/api/meldingen', (req, res) => {
-    const melding = req.body;
-    if (!melding || !melding.type || !melding.location || !melding.playerName) {
-        return res.status(400).json({ message: 'Fout: ongeldige melding' });
-    }
+  const melding = req.body;
+  if (!melding || !melding.type || !melding.location || !melding.playerName) {
+    return res.status(400).json({ message: 'Fout: ongeldige melding' });
+  }
 
-    melding.timestamp = Date.now();
-    meldingen.push(melding);
-    console.log('📥 Nieuwe melding ontvangen:', melding);
+  melding.timestamp = Date.now();
+  meldingen.push(melding);
+  console.log('📥 Nieuwe melding ontvangen:', melding);
 
-    res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
+  res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
 });
 
 // 📤 GET: Alle meldingen ophalen
 app.get('/api/meldingen', (req, res) => {
-    res.json(meldingen);
+  res.json(meldingen);
 });
 
 // ✅ POST: Eenheid aanmaken of bijwerken
 app.post('/api/units', (req, res) => {
-    const unit = req.body;
+  const unit = req.body;
 
-    if (!unit || !unit.id || !unit.type || !unit.location) {
-        return res.status(400).json({ message: 'Ongeldige eenheid' });
-    }
+  if (!unit || !unit.id || !unit.type || !unit.location) {
+    return res.status(400).json({ message: 'Ongeldige eenheid' });
+  }
 
-    const index = eenheden.findIndex(u => u.id === unit.id);
-    if (index !== -1) {
-        eenheden[index] = unit; // bijwerken
-    } else {
-        eenheden.push(unit); // nieuw
-    }
+  const index = eenheden.findIndex(u => u.id === unit.id);
+  if (index !== -1) {
+    eenheden[index] = unit;
+  } else {
+    eenheden.push(unit);
+  }
 
-    res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
+  res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
 });
 
-// ✅ GET: Eenheden ophalen
+// ✅ GET: Alle eenheden ophalen
 app.get('/api/units', (req, res) => {
-    res.json(eenheden);
+  res.json(eenheden);
 });
 
-// ✅ POST: Paaldata ontvangen vanuit Roblox
+// ✅ POST: Luchtalarm-palen ontvangen vanuit Roblox
 app.post('/api/luchtalarm/palen', (req, res) => {
-    const data = req.body;
-    console.log("📥 POST ontvangen van Roblox:", data);
-    console.log("✅ Type:", typeof data, "| Array?", Array.isArray(data));
+  const data = req.body;
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ message: 'Ongeldige paaldata' });
+  }
 
-    if (!Array.isArray(data)) {
-        return res.status(400).json({ message: 'Ongeldige paaldata' });
-    }
-
-    luchtalarmPalen = data;
-    console.log("✅ Paaldata opgeslagen:", luchtalarmPalen);
-    res.json({ message: 'Paaldata opgeslagen' });
+  luchtalarmPalen = data;
+  console.log("📥 Paaldata ontvangen:", luchtalarmPalen.length);
+  res.json({ message: 'Paaldata opgeslagen' });
 });
 
-// ✅ GET: Paaldata opvragen door dashboard
+// ✅ GET: Luchtalarm-palen ophalen
 app.get('/api/luchtalarm/palen', (req, res) => {
-    console.log('📡 Dashboard vraagt paaldata:', luchtalarmPalen);
-    res.json(luchtalarmPalen);
+  res.json(luchtalarmPalen);
 });
 
-// Voeg deze eronder toe:
+// ✅ POST: Actie instellen voor luchtalarm
 app.post('/api/luchtalarm/actie', (req, res) => {
   const { actie, id } = req.body;
   if (!actie || !id) {
     return res.status(400).json({ message: 'Actie of ID ontbreekt' });
   }
+
   laatsteLuchtalarmActie = { actie, id, timestamp: Date.now() };
   console.log(`🚨 Actie '${actie}' ontvangen voor paal '${id}'`);
   res.status(200).json({ message: `Actie '${actie}' uitgevoerd op paal '${id}'` });
 });
 
+// ✅ GET: Ophalen luchtalarm-actie door Roblox
 app.get('/api/luchtalarm/actie', (req, res) => {
   if (!laatsteLuchtalarmActie) {
-    return res.status(204).send(); // Geen inhoud
+    return res.status(204).send();
   }
 
   const actie = laatsteLuchtalarmActie.actie;
-
-  // Reset na uitlezen, zodat Roblox niet elke keer opnieuw triggert
   laatsteLuchtalarmActie = null;
-
   console.log(`📡 Roblox haalt actie op: ${actie}`);
   res.json({ actie });
 });
 
+// ✅ POST: Posten ontvangen vanuit Roblox
 app.post('/api/posten', (req, res) => {
   const data = req.body;
   if (!Array.isArray(data)) {
     return res.status(400).json({ message: 'Ongeldige posten-data' });
   }
+
   posten = data;
   console.log('📥 Posten ontvangen:', posten.length);
   res.json({ message: 'Posten opgeslagen' });
 });
 
+// ✅ GET: Posten ophalen
 app.get('/api/posten', (req, res) => {
   res.json(posten);
 });
 
-// ✅ GET: Ophalen alarmstatus
-app.get('/api/posten/alarm', (req, res) => {
-  const data = laatsteAlarmTrigger;
-  laatsteAlarmTrigger = null; // 🧹 Reset na ophalen
-  res.json(data || {});
-});
-
+// ✅ POST: Alarm triggeren vanuit dashboard
 app.post('/api/posten/alarm', (req, res) => {
   const { postId, trigger, omroep, adres, info, voertuig } = req.body;
 
@@ -142,28 +133,27 @@ app.post('/api/posten/alarm', (req, res) => {
   const alarmData = {
     postId,
     trigger,
-    omroep,
+    omroep: omroep || false,
     adres: adres || "Geen adres",
     info: info || "Geen info",
     voertuig,
     timestamp: Date.now()
   };
 
-  // Sla op voor Roblox polling
-  global.lastPostAlarm = {
-    postId,
-    trigger,
-    omroep,
-    adres,   // 👈 deze moet hier echt staan!
-    info,    // 👈 en deze ook
-    voertuig,
-    timestamp: Date.now()
-  };
+  lastPostAlarm = alarmData;
 
+  console.log('🚨 Alarm opgeslagen:', alarmData);
   res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
 
-// 🚀 Start de server
+// ✅ GET: Laat Roblox het alarm ophalen
+app.get('/api/posten/alarm', (req, res) => {
+  const data = lastPostAlarm;
+  lastPostAlarm = null; // reset na uitlezen
+  res.json(data || {});
+});
+
+// 🚀 Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Server draait op http://localhost:${PORT}`);
+  console.log(`🚀 Server draait op http://localhost:${PORT}`);
 });
