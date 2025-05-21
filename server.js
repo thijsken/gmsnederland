@@ -153,7 +153,7 @@ app.get('/api/posten/alarm', (req, res) => {
   res.json(data || {});
 });
 
-app.post('/api/amber', authenticateUser, (req, res) => {
+app.post('/api/amber', (req, res) => {
   const { name, userId, location, description, timestamp } = req.body;
   if (!name || !userId || !location || !description || !timestamp) {
     return res.status(400).json({ error: "Missing fields" });
