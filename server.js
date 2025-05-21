@@ -14,6 +14,7 @@ let meldingen = [];
 let eenheden = [];
 let luchtalarmPalen = [];
 let posten = [];
+let amberAlerts = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
 
