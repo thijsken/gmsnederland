@@ -153,6 +153,19 @@ app.get('/api/posten/alarm', (req, res) => {
   res.json(data || {});
 });
 
+app.post('/api/amber', authenticateUser, (req, res) => {
+  const { name, userId, location, description, timestamp } = req.body;
+  if (!name || !userId || !location || !description || !timestamp) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  // Sla op in database, logica hier...
+  console.log("📢 Nieuwe Amber Alert:", req.body);
+
+  res.json({ message: "Amber Alert opgeslagen" });
+});
+
+
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
