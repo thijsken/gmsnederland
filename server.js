@@ -153,26 +153,23 @@ app.get('/api/posten/alarm', (req, res) => {
   res.json(data || {});
 });
 
-// GET: Amber Alerts ophalen
+app.post('/api/amber', (req, res) => {
+  const { name, userId, location, description, timestamp } = req.body;
+  if (!name || !userId || !location || !description || !timestamp) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  // Sla op in database, logica hier...
+  console.log("📢 Nieuwe Amber Alert:", req.body);
+
+  res.json({ message: "Amber Alert opgeslagen" });
+});
+
 app.get('/api/amber', (req, res) => {
   res.json(amberAlerts);
 });
 
-// POST: Amber Alert toevoegen
-app.post('/api/amber', (req, res) => {
-  const { name, userId, location, description, timestamp } = req.body;
 
-  if (!name || !userId || !location || !description || !timestamp) {
-    return res.status(400).json({ error: "Ontbrekende velden" });
-  }
-
-  const alert = { name, userId, location, description, timestamp };
-  amberAlerts.push(alert);
-
-  console.log("📢 Nieuwe Amber Alert:", alert);
-
-  res.status(201).json({ message: "Amber Alert opgeslagen" });
-});
 
 // 🚀 Start server
 app.listen(PORT, () => {
