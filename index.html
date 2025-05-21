@@ -5,147 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>112 GMS - Meldkamer</title>
     <script src="https://cdn.tailwindcss.com">
-// 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
-function addLuchtalarmPaal(paal) {
-  console.log("📍 Marker plaatsen:", paal);
-
-  const marker = L.marker([paal.x, paal.y], {
-    icon: L.divIcon({
-      html: `<div class="text-red-600 text-xl"><i class="fas fa-broadcast-tower"></i></div>`,
-      className: "",
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    })
-  });
-
-  marker.addTo(mainMap).on("click", () => {
-    const popupHtml = `
-      <div>
-        <strong>${paal.id}</strong><br/>
-        <button onclick="triggerLuchtalarm('start', '${paal.id}')">Start</button>
-        <button onclick="triggerLuchtalarm('stop', '${paal.id}')">Stop</button>
-        <button onclick="triggerLuchtalarm('test', '${paal.id}')">Test</button>
-      </div>
-    `;
-    marker.bindPopup(popupHtml).openPopup();
-  });
-}
-
-function triggerLuchtalarm(actie, id) {
-  fetch(`${API_URL}/api/luchtalarm/palen`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actie, id })
-  })
-  .then(res => res.json())
-  .then(data => {
-    alert(`✅ ${data.message}`);
-  })
-  .catch(err => {
-    console.error("❌ Fout bij trigger luchtalarm:", err);
-    alert("❌ Luchtalarm mislukt");
-  });
-}
-
-// Functie om paal op de kaart te zetten
-function addLuchtalarmPaal(paal) {
-  const marker = L.marker([paal.x, paal.y], {
-    icon: L.divIcon({
-      html: `<div class="text-red-600 text-xl"><i class="fas fa-broadcast-tower"></i></div>`,
-      className: '',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    })
-  });
-
-  marker.addTo(mainMap).on('click', () => {
-    const popupHtml = `
-      <div class="text-sm space-y-2 text-white">
-        <strong>${paal.id}</strong><br/>
-        <button onclick="triggerLuchtalarm('start', '${paal.id}')" class="bg-red-600 px-2 py-1 rounded">Start</button>
-        <button onclick="triggerLuchtalarm('stop', '${paal.id}')" class="bg-gray-600 px-2 py-1 rounded">Stop</button>
-        <button onclick="triggerLuchtalarm('test', '${paal.id}')" class="bg-yellow-600 px-2 py-1 rounded">Test</button>
-      </div>
-    `;
-    marker.bindPopup(popupHtml).openPopup();
-  });
-}
-
-// Haal paaldata op en toon op kaart
-fetch(`${API_URL}/api/luchtalarm/palen`)
-  .then(res => res.json())
-  .then(palen => {
-    console.log("✅ Ontvangen paaldata van server:", palen);
-    if (Array.isArray(palen)) {
-      palen.forEach(paal => {
-        console.log("➡️ Toevoegen paal:", paal);
-        addLuchtalarmPaal();
-      });
-    }
-  })
-  .catch(err => console.error("❌ Fout bij ophalen paaldata:", err));
-
-
-// 🚀 Ophalen van paaldata uit backend
-fetch('/api/luchtalarm/palen')
-    .then(res => res.json())
-    .then(palen => {
-        if (Array.isArray(palen)) {
-            palen.forEach(paal => addLuchtalarmPaal(paal));
-        } else {
-            console.warn("Geen geldige paaldata ontvangen");
-        }
-    })
-    .catch(err => console.error('Fout bij ophalen paaldata:', err));
 
 </script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-// 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
-function addLuchtalarmPaal(paal) {
-    const icon = L.divIcon({
-        className: '',
-        html: `
-            <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
-                <img src="https://cdn-icons-png.flaticon.com/512/1057/1057228.png"
-                     style="width: 28px; height: 28px;" />
-                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-            </div>
-        `,
-        iconSize: [32, 42],
-        iconAnchor: [16, 42]
-    });
-
-    const marker = L.marker([paal.y, paal.x], { icon }).addTo(mainMap).addTo(dashboardMap);
-
-    const popupContent = `
-        <div style="font-family: sans-serif; font-size: 13px; max-width: 240px;">
-            <strong>Luchtalarm Paal</strong><br>
-            Locatie: x: ${paal.x}, y: ${paal.y}<br><br>
-            <button onclick="triggerLuchtalarm('start')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px;">Start</button>
-            <button onclick="triggerLuchtalarm('stop')" style="background:#6b7280;color:white;padding:4px 8px;border:none;border-radius:4px;">Stop</button>
-            <button onclick="triggerLuchtalarm('test')" style="background:#3b82f6;color:white;padding:4px 8px;border:none;border-radius:4px;">Test</button>
-        </div>
-    `;
-    marker.bindPopup(popupContent);
-}
-
-function triggerLuchtalarm(actie) {
-    fetch('/api/luchtalarm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actie })
-    })
-    .then(res => res.json())
-    .then(data => {
-        showNotification("Luchtalarm", data.message || 'Actie uitgevoerd');
-    })
-    .catch(err => {
-        console.error('Fout bij luchtalarm trigger:', err);
-        showNotification("Luchtalarm", '⚠️ Fout bij uitvoeren actie');
-    });
-}
-
 // 🚀 Ophalen van paaldata uit backend
 fetch('/api/luchtalarm/palen')
     .then(res => res.json())
@@ -176,6 +39,13 @@ fetch('/api/luchtalarm/palen')
         .unit-marker { border-radius: 50%; width: 15px; height: 15px; }
         .blink { animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        ::placeholder {
+            font-weight: bold;
+        }
+        #voertuigSelect {
+            background-color: #423b3b; /* Lichtgrijs */
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen overflow-hidden">
@@ -266,6 +136,18 @@ fetch('/api/luchtalarm/palen')
                             <div id="dashboardMap" class="flex-1 rounded-lg"></div>
                         </div>
                     </div>
+                </div>
+
+                                <div class="bg-gray-800 rounded-lg p-4 mt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-lg font-semibold">Amber Alerts</h3>
+                    <button onclick="openAmberModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Start Amber Alert
+                    </button>
+                </div>
+                <div id="amberTable" class="space-y-2">
+                    <!-- Dynamisch gevulde Amber Alerts -->
+                </div>
                 </div>
 
                 <!-- Map View -->
@@ -517,6 +399,60 @@ fetch('/api/luchtalarm/palen')
     </div>
 </div>
 
+<!-- Kazerenomroep Modal -->
+<div id="kazerenomroepModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-900 rounded-lg w-full max-w-md p-6 shadow-lg">
+    <h2 class="text-xl font-bold mb-4">Kazerenomroep versturen</h2>
+
+    <label class="block text-sm font-medium mb-1">Adres van melding</label>
+    <input id="kazerenAdres" type="text" placeholder="Type hier Het Adders in." class="w-full border p-2 rounded mb-3" />
+
+        <label class="block text-sm font-medium mb-1">Selecteer voertuig</label>
+    <select id="voertuigSelect" class="w-full border p-2 rounded mb-4">
+    <option value="">-- Kies voertuig --</option>
+    <option value="Politie">Politie</option>
+    <option value="Brandweer">Brandweer</option>
+    <option value="Ambulance">Ambulance</option>
+    <option value="Rijkswaterstaat">Rijkswaterstaat</option>
+    </select>
+
+    <label class="block text-sm font-medium mb-1">Informatie</label>
+    <textarea id="kazerenInfo" placeholder="Bijv. brandmelding bij woning" class="w-full border p-2 rounded mb-4"></textarea>
+
+    <div class="flex justify-end gap-2">
+      <button onclick="sluitKazerenModal()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Sluit</button>
+      <button onclick="verstuurKazerenomroep()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Verstuur</button>
+    </div>
+
+    <div id="kazerenFeedback" class="text-green-600 text-sm mt-3 hidden">✅ Verstuurd!</div>
+  </div>
+</div>
+
+<div id="amberModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 rounded-lg w-full max-w-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Start Amber Alert</h2>
+      <button onclick="closeAmberModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+
+    <label class="block text-sm font-medium mb-1">Naam van speler</label>
+    <input type="text" id="amberPlayerName" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" placeholder="Bijv. Jan Jansen">
+
+    <label class="block text-sm font-medium mb-1">UserID</label>
+    <input type="text" id="amberUserId" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" placeholder="Roblox UserId">
+
+    <label class="block text-sm font-medium mb-1">Locatie laatst gezien</label>
+    <input type="text" id="amberLocation" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3">
+
+    <label class="block text-sm font-medium mb-1">Beschrijving</label>
+    <textarea id="amberDescription" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" rows="3"></textarea>
+
+    <div class="flex justify-end space-x-2">
+      <button onclick="closeAmberModal()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">Annuleer</button>
+      <button onclick="saveAmberAlert()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Start Alert</button>
+    </div>
+  </div>
+</div>
 
     <script>
         console.log('🌐 Start fetchEmergencyReports()');
@@ -552,7 +488,9 @@ fetch('/api/luchtalarm/palen')
         let unitMarkers = {};
         let calls = [];
         let units = [];
+        let amberAlerts = [];
         let customMapOverlay = null;
+        let actievePostId = null;
 
         // DOM Elements
         const apiKeyInput = document.getElementById('apiKey');
@@ -603,9 +541,166 @@ fetch('/api/luchtalarm/palen')
 
         // Functions
 
-        
-        
+function openAmberModal() {
+  document.getElementById('amberModal').classList.remove('hidden');
+}
 
+function closeAmberModal() {
+  document.getElementById('amberModal').classList.add('hidden');
+}
+
+function saveAmberAlert() {
+  const name = document.getElementById('amberPlayerName').value.trim();
+  const userId = document.getElementById('amberUserId').value.trim();
+  const location = document.getElementById('amberLocation').value.trim();
+  const description = document.getElementById('amberDescription').value.trim();
+  const timestamp = new Date().toISOString();
+
+  if (!name || !userId || !location || !description) {
+    showNotification("❌ Vul alle velden in!", "error");
+    return;
+  }
+
+  const alert = { name, userId, location, description, timestamp };
+  amberAlerts.push(alert);
+  updateAmberTable();
+  closeAmberModal();
+
+  // Verstuur naar backend
+  fetch('https://gmsnederland-production.up.railway.app/api/amber', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${currentApiKey}`
+    },
+    body: JSON.stringify(alert)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Fout bij opslaan");
+    return res.json();
+  })
+  .then(data => {
+    showNotification("📢 Amber Alert succesvol verstuurd!", "success");
+  })
+  .catch(err => {
+    console.error("❌ Fout bij versturen:", err);
+    showNotification("Fout bij opslaan in backend", "error");
+  });
+}
+
+function updateAmberTable() {
+  const container = document.getElementById('amberTable');
+  container.innerHTML = '';
+
+  amberAlerts.forEach(alert => {
+    const div = document.createElement('div');
+    div.className = 'bg-gray-700 p-3 rounded flex items-start gap-3';
+
+    div.innerHTML = `
+      <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${alert.userId}&width=100&height=100&format=png"
+           class="w-16 h-16 rounded-full border-2 border-red-500" onerror="this.src='https://via.placeholder.com/100';" />
+      <div>
+        <h4 class="font-bold text-red-400">${alert.name}</h4>
+        <p class="text-sm text-gray-300"><strong>Locatie:</strong> ${alert.location}</p>
+        <p class="text-sm text-gray-300"><strong>Beschrijving:</strong> ${alert.description}</p>
+        <p class="text-xs text-gray-400 mt-1">${new Date(alert.timestamp).toLocaleString('nl-NL')}</p>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+        
+function openKazerenModal(postId) {
+  actievePostId = postId;
+  document.getElementById('kazerenAdres').value = '';
+  document.getElementById('kazerenInfo').value = '';
+  document.getElementById('kazerenFeedback').classList.add('hidden');
+  document.getElementById('kazerenomroepModal').classList.remove('hidden');
+}
+
+function sluitKazerenModal() {
+  document.getElementById('kazerenomroepModal').classList.add('hidden');
+}
+
+function verstuurKazerenomroep() {
+  const voertuigSelect = document.getElementById('voertuigSelect');
+  if (!voertuigSelect) {
+    alert("❌ Selectieveld voor voertuig niet gevonden!");
+    return;
+  }
+
+  const voertuig = voertuigSelect.value;
+  const adres = document.getElementById('kazerenAdres')?.value.trim() || "";
+  const info = document.getElementById('kazerenInfo')?.value.trim() || "";
+
+  if (!voertuig || !adres || !info) {
+    alert("Vul alle velden in inclusief voertuig.");
+    return;
+  }
+
+  fetch('https://gmsnederland-production.up.railway.app/api/posten/alarm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      postId: actievePostId,
+      trigger: true,
+      omroep: true,
+      adres,
+      info,
+      voertuig
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('kazerenFeedback')?.classList.remove('hidden');
+    setTimeout(() => {
+      sluitKazerenModal();
+    }, 1500);
+  })
+  .catch(err => {
+    console.error("❌ Fout bij versturen:", err);
+    alert("Fout bij versturen!");
+  });
+}
+
+function sluitKazerenModal() {
+  document.getElementById('kazerenomroepModal').classList.add('hidden');
+}
+
+function verstuurKazerenomroep() {
+  const adres = document.getElementById('kazerenAdres').value.trim();
+  const info = document.getElementById('kazerenInfo').value.trim();
+  const voertuig = document.getElementById('voertuigSelect').value;
+
+  if (!adres || !info || !voertuig) {
+    alert("Vul alle velden in, inclusief voertuig.");
+    return;
+  }
+
+  fetch('https://gmsnederland-production.up.railway.app/api/posten/alarm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      postId: actievePostId,
+      trigger: true,
+      omroep: true,
+      adres,
+      info,
+      voertuig
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('kazerenFeedback').classList.remove('hidden');
+    setTimeout(() => {
+      sluitKazerenModal();
+    }, 1500);
+  })
+  .catch(err => {
+    console.error("❌ Fout bij versturen:", err);
+    alert("Fout bij versturen!");
+  });
+}
 
 function uploadMapImage() {
     const input = document.getElementById('mapImageInput');
@@ -649,9 +744,6 @@ function uploadMapImage() {
 
     reader.readAsDataURL(file);
 }
-
-
-
 
         function showView(viewId) {
             document.getElementById('dashboardView').classList.add('hidden');
@@ -1315,9 +1407,6 @@ function fetchUnits() {
     });
 }
 
-// Automatisch elke 5 seconden updaten
-setInterval(fetchUnits, 1000);
-
 // Haal eenheden elke 5 seconden op
 setInterval(fetchUnits, 1000);
 fetchUnits(); // bij laden
@@ -1673,60 +1762,139 @@ addNewCall(newCall);
     
 // 🛰️ Ophalen en tonen van luchtalarm-palen via echte Roblox API data
 function addLuchtalarmPaal(paal) {
-    const icon = L.divIcon({
+  console.log("📍 Voeg marker toe voor:", paal);
+
+  const marker = L.marker([paal.x, paal.y]).addTo(mainMap);
+  marker.bindPopup(`
+    <b>Luchtalarm: ${paal.id}</b><br/>
+    <button onclick="triggerLuchtalarm('start', '${paal.id}')">Start</button>
+    <button onclick="triggerLuchtalarm('stop', '${paal.id}')">Stop</button>
+    <button onclick="triggerLuchtalarm('test', '${paal.id}')">Test</button>
+  `);
+}
+
+function triggerLuchtalarm(actie, id) {
+  fetch(`${API_URL}/api/luchtalarm/actie`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actie, id })  // ✅ nu goed
+  })
+  .then(res => res.json())
+  .then(data => {
+    showNotification("Luchtalarm", data.message || 'Actie uitgevoerd');
+  })
+  .catch(err => {
+    console.error('Fout bij luchtalarm trigger:', err);
+    showNotification("Luchtalarm", '⚠️ Fout bij uitvoeren actie');
+  });
+}
+
+
+// 🚀 Ophalen van paaldata uit backend
+fetch(`${API_URL}/api/luchtalarm/palen`)
+  .then(res => res.json())
+  .then(palen => {
+    console.log("✅ Ontvangen paaldata:", palen);
+    if (Array.isArray(palen)) {
+      palen.forEach(paal => {
+        console.log("🧭 Verwerk paal:", paal);
+        addLuchtalarmPaal(paal); // ← Wordt dit uitgevoerd?
+      });
+    }
+  })
+  .catch(err => console.error("❌ Fout bij ophalen paaldata:", err));
+
+fetch('https://gmsnederland-production.up.railway.app/api/posten')
+  .then(res => res.json())
+  .then(posten => {
+    posten.forEach(post => {
+      if (!post.x || !post.y) return;
+
+      // 🔁 Zelfde luchtalarm-icoon
+      const icon = L.divIcon({
         className: '',
         html: `
-            <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
-                <img src="https://cdn-icons-png.flaticon.com/512/1057/1057228.png"
-                     style="width: 28px; height: 28px;" />
-                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-            </div>
+          <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+            <img src="https://cdn-icons-png.flaticon.com/512/1057/1057228.png"
+                 style="width: 28px; height: 28px;" />
+            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+          </div>
         `,
         iconSize: [32, 42],
         iconAnchor: [16, 42]
+      });
+
+      // ✅ Status info
+      const statusen = post.statusen || [];
+        const statusHtml = (post.statusen || []).map((s, i) => {
+        const inputId = `${post.name}-status-${i}`;
+        return `
+            <div>
+            ${s.name}: 
+            <span style="color:${s.state ? "red" : "green"}">
+                ${s.state ? "bezet" : "vrij"}
+            </span>
+            | <input type="checkbox" id="${inputId}">
+            </div>`;
+        }).join("");
+
+
+      const allesBezet = statusen.length > 0 && statusen.every(s => s.state);
+      const knopText = allesBezet ? "Is all bezet" : "ALARM";
+      const knopKleur = allesBezet ? "red" : "#ef4444";
+      const alarmKnopId = `alarm-${post.name}`;
+      console.log("🧪 Post:", post.name, "Statusen:", post.statusen);
+
+const popup = `
+  <div style="min-width:150px">
+    <strong>${post.name}</strong><br>
+    ${(post.statusen || []).map((s, i) => `
+      <div>
+        ${s.name}: <span style="color:${s.state ? "red" : "green"}">${s.state ? "bezet" : "vrij"}</span>
+      </div>
+    `).join("")}
+    <button onclick="openKazerenModal('${post.name}')" style="background:#ef4444;color:white;padding:4px 10px;border:none;border-radius:4px;margin-top:6px;">
+      ALARM
+    </button>
+  </div>
+`;
+
+      // 📍 Voeg toe aan beide kaarten
+const marker = L.marker([post.x, post.y], { icon })
+  .addTo(mainMap) // of dashboardMap, of beide
+  .bindPopup(popup);
+
+
+      marker.on('popupopen', () => {
+        setTimeout(() => {
+          const btn = document.getElementById(alarmKnopId);
+          if (btn) {
+            btn.addEventListener('click', () => {
+              fetch('https://gmsnederland-production.up.railway.app/api/posten/alarm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: post.name, trigger: true })
+              })
+              .then(res => res.json())
+              .then(data => console.log('🚨 Alarm getriggerd:', data))
+              .catch(err => console.error('❌ Fout bij alarm:', err));
+            });
+          }
+        }, 200);
+      });
     });
+  })
+  .catch(err => console.error("❌ Fout bij ophalen posten:", err));
 
-    const marker = L.marker([paal.y, paal.x], { icon }).addTo(mainMap).addTo(dashboardMap);
-
-    const popupContent = `
-        <div style="font-family: sans-serif; font-size: 13px; max-width: 240px;">
-            <strong>Luchtalarm Paal</strong><br>
-            Locatie: x: ${paal.x}, y: ${paal.y}<br><br>
-            <button onclick="triggerLuchtalarm('start')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px;">Start</button>
-            <button onclick="triggerLuchtalarm('stop')" style="background:#6b7280;color:white;padding:4px 8px;border:none;border-radius:4px;">Stop</button>
-            <button onclick="triggerLuchtalarm('test')" style="background:#3b82f6;color:white;padding:4px 8px;border:none;border-radius:4px;">Test</button>
-        </div>
-    `;
-    marker.bindPopup(popupContent);
-}
-
-function triggerLuchtalarm(actie) {
-    fetch('/api/luchtalarm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actie })
-    })
-    .then(res => res.json())
-    .then(data => {
-        showNotification("Luchtalarm", data.message || 'Actie uitgevoerd');
-    })
-    .catch(err => {
-        console.error('Fout bij luchtalarm trigger:', err);
-        showNotification("Luchtalarm", '⚠️ Fout bij uitvoeren actie');
-    });
-}
-
-// 🚀 Ophalen van paaldata uit backend
-fetch('/api/luchtalarm/palen')
-    .then(res => res.json())
-    .then(palen => {
-        if (Array.isArray(palen)) {
-            palen.forEach(paal => addLuchtalarmPaal(paal));
-        } else {
-            console.warn("Geen geldige paaldata ontvangen");
+      // Voorbeeld veilige verwijdering van markers
+    const markers = [];
+    function clearMarkers() {
+      markers.forEach(marker => {
+        if (marker && mainMap.hasLayer(marker)) {
+          mainMap.removeLayer(marker);
         }
-    })
-    .catch(err => console.error('Fout bij ophalen paaldata:', err));
+      });
+    }
 
 </script>
 </body>
