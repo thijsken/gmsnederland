@@ -169,6 +169,10 @@ app.post('/api/amber', (req, res) => {
   res.status(201).json({ message: "Amber Alert opgeslagen", alert });
 });
 
+app.get('/api/amber', (req, res) => {
+  res.json(amberAlerts);
+});
+
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
