@@ -165,6 +165,19 @@ app.post('/api/amber', (req, res) => {
   res.json({ message: "Amber Alert opgeslagen" });
 });
 
+app.post('/api/amber', (req, res) => {
+  const { name, userId, location, description, timestamp } = req.body;
+
+  if (!name || !userId || !location || !description || !timestamp) {
+    return res.status(400).json({ error: "Ontbrekende velden" });
+  }
+
+  amberAlerts.push({ name, userId, location, description, timestamp });
+
+  res.status(201).json({ message: "Amber Alert opgeslagen" });
+});
+
+
 
 // 🚀 Start server
 app.listen(PORT, () => {
