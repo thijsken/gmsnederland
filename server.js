@@ -126,6 +126,7 @@ app.get('/api/posten', (req, res) => {
   res.json(posten);
 });
 
+// ✅ POST: Alarm triggeren vanuit dashboard
 app.post('/api/posten/alarm', (req, res) => {
   const { postId, trigger, omroep, adres, info, voertuig } = req.body;
 
@@ -142,17 +143,19 @@ app.post('/api/posten/alarm', (req, res) => {
     voertuig,
     timestamp: Date.now()
   };
+  lastPostAlarm.push(alarmData);
 
-  alarmQueue.push(alarmData);
+  // lastPostAlarm = alarmData;
 
   console.log('🚨 Alarm opgeslagen:', alarmData);
   res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
 
+// ✅ GET: Laat Roblox het alarm ophalen
 app.get('/api/posten/alarm', (req, res) => {
-  const data = [...alarmQueue];
-  alarmQueue = []; // clear after sending all alarms
-  res.json(data);
+  const data = lastPostAlarm;
+  lastPostAlarm = null; // reset na uitlezen
+  res.json(data || {});
 });
 
 app.post('/api/amber', (req, res) => {
