@@ -146,6 +146,9 @@ fetch('/api/luchtalarm/palen')
                 <button onclick="openAmberModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-exclamation-triangle mr-2"></i>Start Amber Alert
                 </button>
+                <button onclick="openP2000Modal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-bullhorn mr-2"></i>P2000 Alarm
+                </button>
                 <button onclick="openNLAlertModal()" class="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded">
                     <i class="fas fa-bullhorn mr-2"></i>Start NL-Alert
                 </button>
@@ -481,6 +484,34 @@ fetch('/api/luchtalarm/palen')
     </div>
   </div>
 </div>
+<!--p2000Modal -->
+<div id="p2000Modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 rounded-lg w-full max-w-xl p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Start P2000 Alarm</h2>
+      <button onclick="closeP2000Modal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+
+    <label class="block text-sm font-medium mb-1">Straat + huisnummer</label>
+    <input type="text" id="p2000Adres" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" placeholder="Bijv. Dorpsstraat 15">
+
+    <label class="block text-sm font-medium mb-1">Voertuignummers (gescheiden door komma)</label>
+    <input type="text" id="p2000Voertuigen" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" placeholder="Bijv. 06-1234, 07-5678">
+
+    <label class="block text-sm font-medium mb-1">Wat is er aan de hand?</label>
+    <textarea id="p2000Situatie" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" rows="3" placeholder="Bijv. brand in woning, rookontwikkeling bij zolder"></textarea>
+
+    <label class="block text-sm font-medium mb-1">Selecteer post</label>
+    <select id="p2000PostSelect" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-4">
+      <option value="">-- Kies een post --</option>
+    </select>
+
+    <div class="flex justify-end space-x-2">
+      <button onclick="closeP2000Modal()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">Annuleer</button>
+      <button onclick="verstuurP2000Alarm()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded">Verstuur Alarm</button>
+    </div>
+  </div>
+</div>
 
 
     <script>
@@ -514,6 +545,7 @@ fetch('/api/luchtalarm/palen')
         let calls = [];
         let units = [];
         let amberAlerts = [];
+        let laatstVerzondenP2000 = null;
         let customMapOverlay = null;
         let actievePostId = null;
 
@@ -565,6 +597,133 @@ fetch('/api/luchtalarm/palen')
         document.getElementById('closeCallBtn').addEventListener('click', closeCall);
 
         // Functions
+
+function openP2000Modal() {
+  document.getElementById('p2000Modal').classList.remove('hidden');
+  laadPostenVoorP2000();
+}
+
+function closeP2000Modal() {
+  document.getElementById('p2000Modal').classList.add('hidden');
+}
+
+function laadPostenVoorP2000() {
+  const select = document.getElementById('p2000PostSelect');
+  if (!select) {
+    console.error("❌ Selectelement #p2000PostSelect niet gevonden!");
+    showNotification("Selectielijst voor posten ontbreekt!", "error");
+    return;
+  }
+
+  select.innerHTML = '<option value="">-- Kies een post --</option>';
+
+  fetch('https://gmsnederland-production.up.railway.app/api/posten')
+    .then(res => {
+      if (!res.ok) throw new Error(`Fout bij ophalen posten: ${res.status} ${res.statusText}`);
+      return res.json();
+    })
+    .then(posten => {
+      if (!Array.isArray(posten) || posten.length === 0) {
+        showNotification("⚠️ Geen posten beschikbaar!", "info");
+        return;
+      }
+
+      posten.forEach(post => {
+        // Alleen posten met x en y laten zien
+        if (!post.x || !post.y) return;
+
+        const option = document.createElement('option');
+        option.value = post.id || post.name || "";  // fallback op id of name
+        option.textContent = post.name || `Post ${post.id}`;
+        select.appendChild(option);
+      });
+
+      console.log("✅ Posten geladen:", posten);
+    })
+    .catch(err => {
+      console.error("❌ Fout bij ophalen posten:", err);
+      showNotification("Fout bij laden van posten", "error");
+    });
+}
+
+function genereerP2000Code(beschrijving) {
+  const tekst = beschrijving.toLowerCase();
+  if (tekst.includes("brand") && tekst.includes("woning")) return "P1 BR (Woningen)";
+  if (tekst.includes("brand") && tekst.includes("auto")) return "P1 BR (Voertuig)";
+  if (tekst.includes("ongeval") || tekst.includes("botsing")) return "P1 Ongeval Wegverkeer";
+  if (tekst.includes("reanimatie")) return "P1 Reanimatie";
+  if (tekst.includes("gas") || tekst.includes("lekkage")) return "P1 Gaslekkage";
+  if (tekst.includes("storm") || tekst.includes("boom")) return "P2 Stormschade";
+  return "P1 Onbekende Melding";
+}
+
+function verstuurP2000Alarm() {
+  const adres = document.getElementById('p2000Adres').value.trim();
+  const voertuigen = document.getElementById('p2000Voertuigen').value.trim();
+  const situatie = document.getElementById('p2000Situatie').value.trim();
+const postSelect = document.getElementById('p2000PostSelect');
+if (!postSelect) {
+  console.error("❌ Selectelement #p2000PostSelect bestaat niet!");
+  showNotification("Er is een probleem met het laden van de postenlijst.", "error");
+  return;
+}
+const postId = postSelect.value;
+
+if (!postId || postId === "undefined") {
+  showNotification("❌ Geen post geselecteerd! Kies een post uit de lijst.", "error");
+  return;
+}
+  if (!adres || !voertuigen || !situatie || !postId) {
+    showNotification("❌ Vul alle velden in!", "error");
+    return;
+  }
+
+  const meldingCode = genereerP2000Code(situatie);
+  const volledigMelding = `${meldingCode} - ${adres}\nVoertuigen: ${voertuigen}\n${situatie}`;
+
+  if (volledigMelding === laatstVerzondenP2000) {
+    showNotification("ℹ️ Deze melding is al verzonden.", "info");
+    return;
+  }
+
+  laatstVerzondenP2000 = volledigMelding;
+
+  const payload = {
+    postId,
+    trigger: true,
+    omroep: true,
+    adres,
+    info: volledigMelding,
+    voertuig: voertuigen
+  };
+
+  console.log("📦 Payload die wordt verstuurd naar /api/posten/alarm:", payload);
+
+fetch(`${API_URL}/api/posten/alarm`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+})
+.then(async res => {
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = { message: await res.text() };
+  }
+  if (!res.ok) {
+    console.error("❌ Serverfout bij POST:", data);
+    throw new Error(data.message || "Onbekende fout");
+  }
+  console.log("✅ Serverresponse:", data);
+  showNotification("🚨 P2000 Alarm verstuurd!", "success");
+  closeP2000Modal();
+})
+.catch(err => {
+  console.error("❌ Fout bij verzenden van P2000:", err);
+  showNotification("❌ Fout bij verzenden: " + err.message, "error");
+});
+}
 
 function openNLAlertModal() {
     document.getElementById('nlalertModal').classList.remove('hidden');
