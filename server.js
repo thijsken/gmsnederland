@@ -16,6 +16,7 @@ let eenheden = [];
 let luchtalarmPalen = [];
 let posten = [];
 let amberAlerts = [];
+let nlAlerts = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
 
@@ -175,19 +176,26 @@ app.get('/api/amber', (req, res) => {
 });
 
 
+// ✅ POST: NLAlert verzenden
 app.post('/api/nlalert', (req, res) => {
   const { title, message, location, timestamp } = req.body;
 
   if (!title || !message || !location || !timestamp) {
-    return res.status(400).json({ error: "Ontbrekende velden voor NLALert"});
+    return res.status(400).json({ error: "Ontbrekende velden voor NLAlert" });
   }
 
   const alert = { title, message, location, timestamp };
-  console.log("NLAlert Ontvangen.", alert);
+  nlAlerts.push(alert);
 
-  res.status(201).json({ message: "NLAlert opgeslagen", alert});
+  console.log("📢 NLAlert opgeslagen:", alert);
+
+  res.status(201).json({ message: "NLAlert opgeslagen", alert });
 });
 
+// Get: Alle NLAlerts ophalen
+app.get('/api/nlalert', (req, res) => {
+  res.json(nlAlerts);
+})
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
