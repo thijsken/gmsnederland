@@ -17,6 +17,7 @@ let luchtalarmPalen = [];
 let posten = [];
 let amberAlerts = [];
 let nlAlerts = [];
+let alarmQueue = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
 
@@ -125,7 +126,6 @@ app.get('/api/posten', (req, res) => {
   res.json(posten);
 });
 
-// ✅ POST: Alarm triggeren vanuit dashboard
 app.post('/api/posten/alarm', (req, res) => {
   const { postId, trigger, omroep, adres, info, voertuig } = req.body;
 
@@ -143,17 +143,16 @@ app.post('/api/posten/alarm', (req, res) => {
     timestamp: Date.now()
   };
 
-  lastPostAlarm = alarmData;
+  alarmQueue.push(alarmData);
 
   console.log('🚨 Alarm opgeslagen:', alarmData);
   res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
 
-// ✅ GET: Laat Roblox het alarm ophalen
 app.get('/api/posten/alarm', (req, res) => {
-  const data = lastPostAlarm;
-  lastPostAlarm = null; // reset na uitlezen
-  res.json(data || {});
+  const data = [...alarmQueue];
+  alarmQueue = []; // clear after sending all alarms
+  res.json(data);
 });
 
 app.post('/api/amber', (req, res) => {
