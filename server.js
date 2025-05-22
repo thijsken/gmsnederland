@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const { error } = require('console');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -171,6 +172,20 @@ app.post('/api/amber', (req, res) => {
 
 app.get('/api/amber', (req, res) => {
   res.json(amberAlerts);
+});
+
+
+app.post('/api/nlalert', (req, res) => {
+  const { title, message, location, timestamp } = req.body;
+
+  if (!title || !message || !location || !timestamp) {
+    return res.status(400).json({ error: "Ontbrekende velden voor NLALert"});
+  }
+
+  const alert = { title, message, location, timestamp };
+  console.log("NLAlert Ontvangen.", alert);
+
+  res.status(201).json({ message: "NLAlert opgeslagen", alert});
 });
 
 // 🚀 Start server
