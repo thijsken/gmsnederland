@@ -141,9 +141,14 @@ fetch('/api/luchtalarm/palen')
                                 <div class="bg-gray-800 rounded-lg p-4 mt-4">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-lg font-semibold">Amber Alerts</h3>
-                    <button onclick="openAmberModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                </div>
+                            <div class="flex space-x-2">
+                <button onclick="openAmberModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-exclamation-triangle mr-2"></i>Start Amber Alert
-                    </button>
+                </button>
+                <button onclick="openNLAlertModal()" class="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded">
+                    <i class="fas fa-bullhorn mr-2"></i>Start NL-Alert
+                </button>
                 </div>
                 <div id="amberTable" class="space-y-2">
                     <!-- Dynamisch gevulde Amber Alerts -->
@@ -427,7 +432,7 @@ fetch('/api/luchtalarm/palen')
     <div id="kazerenFeedback" class="text-green-600 text-sm mt-3 hidden">✅ Verstuurd!</div>
   </div>
 </div>
-
+<!-- amberAlaert Modal -->
 <div id="amberModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
   <div class="bg-gray-800 rounded-lg w-full max-w-lg p-6">
     <div class="flex justify-between items-center mb-4">
@@ -453,6 +458,30 @@ fetch('/api/luchtalarm/palen')
     </div>
   </div>
 </div>
+<!--nlalertModal-->
+<div id="nlalertModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 rounded-lg w-full max-w-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Start NL-Alert</h2>
+      <button onclick="closeNLAlertModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+
+    <label class="block text-sm font-medium mb-1">Titel</label>
+    <input type="text" id="nlalertTitle" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3">
+
+    <label class="block text-sm font-medium mb-1">Bericht</label>
+    <textarea id="nlalertMessage" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3" rows="3"></textarea>
+
+    <label class="block text-sm font-medium mb-1">Locatie</label>
+    <input type="text" id="nlalertLocation" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-3">
+
+    <div class="flex justify-end space-x-2">
+      <button onclick="closeNLAlertModal()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">Annuleer</button>
+      <button onclick="saveNLAlert()" class="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded">Verzend NL-Alert</button>
+    </div>
+  </div>
+</div>
+
 
     <script>
         console.log('🌐 Start fetchEmergencyReports()');
@@ -478,10 +507,6 @@ fetch('/api/luchtalarm/palen')
     maxZoom: 5,
     zoomSnap: 0.1
 }).setView([0, 0], 0);
-
-        
-
-        
 
         // Markers and data
         let emergencyMarkers = {};
@@ -541,6 +566,43 @@ fetch('/api/luchtalarm/palen')
 
         // Functions
 
+function openNLAlertModal() {
+    document.getElementById('nlalertModal').classList.remove('hidden');
+}
+
+function closeNLAlertModal() {
+    document.getElementById('nlalertModal').classList.add('hidden');
+}
+
+function saveNLAlert() {
+  const title = document.getElementById('nlalertTitle').value.trim();
+  const message = document.getElementById('nlalertMessage').value.trim();
+  const location = document.getElementById('nlalertLocation').value.trim();
+  const timestamp = new Date().toISOString();
+
+  if (!title || !message || !location) {
+    showNotification("❌ Vul alle velden in voor NL-Alert!", "error");
+    return;
+  }
+
+  const alert = { title, message, location, timestamp };
+
+  fetch(`${API_URL}/api/nlalert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(alert)
+  })
+  .then(res => res.json())
+  .then(data => {
+    showNotification("📢 NL-Alert verzonden!", "success");
+    closeNLAlertModal();
+  })
+  .catch(err => {
+    console.error("❌ Fout bij versturen NL-Alert:", err);
+    showNotification("Fout bij verzenden van NL-Alert", "error");
+  });
+}
+
 function openAmberModal() {
   document.getElementById('amberModal').classList.remove('hidden');
 }
@@ -571,7 +633,6 @@ function saveAmberAlert() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${currentApiKey}`
     },
     body: JSON.stringify(alert)
   })
