@@ -143,9 +143,8 @@ app.post('/api/posten/alarm', (req, res) => {
     voertuig,
     timestamp: Date.now()
   };
-  lastPostAlarm.push(alarmData);
 
-  // lastPostAlarm = alarmData;
+  alarmQueue = alarmData;
 
   console.log('🚨 Alarm opgeslagen:', alarmData);
   res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
