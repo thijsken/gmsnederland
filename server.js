@@ -34,6 +34,7 @@ app.post('/api/meldingen', (req, res) => {
   }
 
   melding.timestamp = Date.now();
+  melding.status = "new"; // voeg status toe
   meldingen.push(melding);
   console.log('📥 Nieuwe melding ontvangen:', melding);
 
@@ -43,6 +44,25 @@ app.post('/api/meldingen', (req, res) => {
 // 📤 GET: Alle meldingen ophalen
 app.get('/api/meldingen', (req, res) => {
   res.json(meldingen);
+});
+
+// ✅ PATCH: Status van melding bijwerken
+app.patch('/api/meldingen/:timestamp/status', (req, res) => {
+  const { timestamp } = req.params;
+  const { status } = req.body;
+
+  if (!status || !["new", "accepted", "assigned", "closed"].includes(status)) {
+    return res.status(400).json({ message: 'Ongeldige statuswaarde' });
+  }
+
+  const melding = meldingen.find(m => String(m.timestamp) === timestamp);
+  if (!melding) {
+    return res.status(404).json({ message: 'Melding niet gevonden' });
+  }
+
+  melding.status = status;
+  console.log(`🔄 Status melding ${timestamp} gewijzigd naar ${status}`);
+  res.json({ message: 'Status bijgewerkt', melding });
 });
 
 // ✅ POST: Eenheid aanmaken of bijwerken
