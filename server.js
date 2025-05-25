@@ -46,24 +46,28 @@ app.get('/api/meldingen', (req, res) => {
   res.json(meldingen);
 });
 
-// ✅ PATCH: Status van melding bijwerken
 app.patch('/api/meldingen/:timestamp/status', (req, res) => {
   const { timestamp } = req.params;
   const { status } = req.body;
 
-  if (!status || !["new", "accepted", "assigned", "closed"].includes(status)) {
-    return res.status(400).json({ message: 'Ongeldige statuswaarde' });
+  console.log(`🔧 PATCH aanvraag ontvangen voor melding ${timestamp} met status "${status}"`);
+
+  if (!["new", "accepted", "assigned", "closed"].includes(status)) {
+    console.warn(`❌ Ongeldige status ontvangen: ${status}`);
+    return res.status(400).json({ message: 'Ongeldige status' });
   }
 
   const melding = meldingen.find(m => String(m.timestamp) === timestamp);
   if (!melding) {
+    console.warn(`⚠️ Melding met timestamp ${timestamp} niet gevonden`);
     return res.status(404).json({ message: 'Melding niet gevonden' });
   }
 
   melding.status = status;
-  console.log(`🔄 Status melding ${timestamp} gewijzigd naar ${status}`);
+  console.log(`✅ Status van melding ${timestamp} succesvol gewijzigd naar "${status}"`);
   res.json({ message: 'Status bijgewerkt', melding });
 });
+
 
 // ✅ POST: Eenheid aanmaken of bijwerken
 app.post('/api/units', (req, res) => {
