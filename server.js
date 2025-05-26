@@ -218,6 +218,38 @@ app.post('/api/nlalert', (req, res) => {
   res.status(201).json({ message: "NLAlert opgeslagen", alert });
 });
 
+// ✅ POST: ANPR-trigger vanaf Roblox
+app.post('/api/anpr', (req, res) => {
+  const { plate, location } = req.body;
+
+  if (!plate || !location) {
+    return res.status(400).json({ message: 'Plate of locatie ontbreekt' });
+  }
+
+  const verdachtePlaten = ['XX-123-X', '99-ABC-1', '00-POL-911'];
+  const isVerdacht = verdachtePlaten.includes(plate.toUpperCase());
+
+  if (isVerdacht) {
+    const melding = {
+      id: Date.now().toString(),
+      type: 'Verdacht voertuig',
+      location,
+      description: `ANPR hit op kenteken: ${plate}`,
+      playerName: 'ANPR Systeem',
+      userId: 0,
+      timestamp: Date.now(),
+      status: 'new',
+      coordinates: { x: 100, y: 100, z: 0 } // eventueel dynamisch maken
+    };
+    meldingen.push(melding);
+    console.log(`🚨 ANPR HIT - Melding aangemaakt voor kenteken ${plate}`);
+    return res.status(201).json({ message: 'Verdacht voertuig gemeld', data: melding });
+  }
+
+  res.status(200).json({ message: 'Kenteken gescand, geen hit' });
+});
+
+
 // Get: Alle NLAlerts ophalen
 app.get('/api/nlalert', (req, res) => {
   res.json(nlAlerts);
