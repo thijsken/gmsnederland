@@ -1183,45 +1183,85 @@ function uploadMapImage() {
             `);
         }
 
-        function updateCalls() {
-        const recentCalls = document.getElementById('recentCalls');
-        const callList = document.getElementById('callList');
+function updateCalls() {
+    const recentCalls = document.getElementById('recentCalls');
+    const callList = document.getElementById('callList');
 
-        recentCalls.innerHTML = '';
-        callList.innerHTML = '';
-        calls.forEach(call => {
-            const callItem = document.createElement('div');
-            callItem.className = 'bg-gray-800 p-4 rounded shadow';
+    recentCalls.innerHTML = '';
+    callList.innerHTML = '';
 
-            callItem.innerHTML = `
-                <div class="flex justify-between">
-                    <span class="font-semibold">112 - ${call.type}</span>
-                    <span class="text-sm text-gray-400">${formatTime(call.timestamp)}</span>
+    calls.forEach(call => {
+        const callItem = document.createElement('div');
+        callItem.className = 'bg-gray-800 p-4 rounded shadow mb-2';
+
+        callItem.innerHTML = `
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="font-semibold">112 - ${call.type}</span><br>
+                    <span class="text-sm text-gray-400">${call.location}</span>
                 </div>
-                <div class="text-sm text-gray-300 mt-1">${call.location}</div>
-            `;
+                <div class="text-sm text-gray-400">${formatTime(call.timestamp)}</div>
+            </div>
+            <div class="mt-2">
+                ${call.status === 'new'
+                    ? `<button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="acceptCall('${call.id}')">Accepteer</button>`
+                    : `<span class="text-green-400 font-semibold">Geaccepteerd</span>`
+                }
+                <button class="ml-2 text-white underline" onclick="showCallDetails('${call.id}')">Details</button>
+            </div>
+        `;
 
+        if (call.status === 'new') {
             recentCalls.appendChild(callItem);
+        } else if (call.status === 'accepted') {
             callList.appendChild(callItem);
-        });
+        }
+    });
+
+    document.getElementById('activeCallsCount').textContent = calls.filter(c => c.status !== 'new').length;
+}
+// ✅ GEHELE HERSCHREVEN VERSIE VAN acceptCall(callId)
+function acceptCall(callId) {
+const call = calls.find(c => String(c.id) === String(callId));
+    if (!call || call.status !== 'new') {
+        console.warn("⚠️ Geen geldige melding gevonden of status is niet 'new':", callId);
+        return;
     }
 
-            function acceptCall(callId) {
-            const call = calls.find(c => c.id === callId);
-            if (call) {
-                call.status = 'accepted';
-                updateCalls();
-                
-                const marker = emergencyMarkers[callId];
-                if (marker) {
-                    marker.setStyle({color: '#f59e0b'}); // Change to yellow for accepted
-                }
-                
-                showNotification(`Melding ${callId} geaccepteerd`);
-            }
-        }
+    console.log("🔍 acceptCall() aangeroepen voor:", callId);
 
+    // ✅ Lokaal updaten
+    call.status = 'accepted';
+    updateCalls();
 
+    const marker = emergencyMarkers[callId];
+    if (marker) {
+        marker.setStyle({ color: '#f59e0b' });
+    }
+
+    // 🌐 PATCH naar backend
+    fetch(`${API_URL}/api/meldingen/${callId}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}` // Voeg API-sleutel toe als vereist
+        },
+        body: JSON.stringify({ status: 'accepted' })
+    })
+    .then(res => {
+        console.log(`🌐 PATCH response status: ${res.status}`);
+        if (!res.ok) throw new Error("PATCH mislukt");
+        return res.json();
+    })
+    .then(data => {
+        console.log(`✅ PATCH geslaagd voor melding ${callId}:`, data);
+        showNotification(`📞 Melding ${callId} geaccepteerd (via backend)`, 'success');
+    })
+    .catch(err => {
+        console.error('❌ Fout bij PATCH melding:', err);
+        showNotification('Fout bij backend-update, lokaal geaccepteerd', 'error');
+    });
+}
     function updateCallList() {
     const callListContainer = document.getElementById('callListContainer');
     callListContainer.innerHTML = ''; // Maak de container leeg
@@ -1256,23 +1296,8 @@ function uploadMapImage() {
     });
 }
 
-        function acceptCall(callId) {
-            const call = calls.find(c => c.id === callId);
-            if (call) {
-                call.status = 'accepted';
-                updateCalls();
-                
-                const marker = emergencyMarkers[callId];
-                if (marker) {
-                    marker.setStyle({color: '#f59e0b'}); // Change to yellow for accepted
-                }
-                
-                showNotification(`Melding ${callId} geaccepteerd`);
-            }
-        }
-
-        function showCallDetails(callId) {
-            const call = calls.find(c => c.id === callId);
+function showCallDetails(callId) {
+const call = calls.find(c => String(c.id) === String(callId));
             if (!call) return;
             
             currentCallId = callId;
@@ -1366,7 +1391,7 @@ function uploadMapImage() {
             if (!currentCallId) return;
             
             // Find call and mark as closed
-            const call = calls.find(c => c.id === currentCallId);
+            const call = calls.find(c => String(c.id) === String(currentCallId));
             if (call) {
                 call.status = 'closed';
             }
@@ -1480,90 +1505,51 @@ function uploadMapImage() {
         }
 
 let vorigeMeldingenTimestamps = [];
+let bekendeMeldingen = new Set();
 
 function fetchEmergencyReports() {
     fetch(`${API_URL}/api/meldingen`)
         .then(res => res.json())
         .then(data => {
-            // Filter nieuwe meldingen (geen accepted of closed)
-            const nieuweMeldingen = data.filter(m => m.status === 'new');
+            const nieuweMeldingen = data.filter(m => 
+                m.status === 'new' && !bekendeMeldingen.has(m.timestamp)
+            );
 
-            // Update globale calls array (alleen nieuwe)
-            calls = nieuweMeldingen.map((item, index) => ({
-                id: item.timestamp || `call_${index}`,
-                ...item,
-                coordinates: item.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
-                status: item.status || 'new'
-            }));
+            nieuweMeldingen.forEach(melding => {
+                bekendeMeldingen.add(melding.timestamp); // markeer als gezien
 
-            // Verwijder oude emergency markers (veilig)
-            Object.entries(emergencyMarkers).forEach(([id, marker]) => {
-                try {
-                    if (mainMap.hasLayer(marker)) mainMap.removeLayer(marker);
-                    if (dashboardMap.hasLayer(marker)) dashboardMap.removeLayer(marker);
-                } catch (e) {
-                    console.warn(`⚠️ Fout bij verwijderen marker ${id}:`, e);
-                }
-            });
-            emergencyMarkers = {};
+                const call = {
+                    id: melding.timestamp,
+                    ...melding,
+                    coordinates: melding.coordinates || { x: 4.8952, y: 52.3702, z: 0 },
+                    status: 'new'
+                };
 
-            const container = document.getElementById('recentCalls');
-            if (!container) return;
-            container.innerHTML = ''; // Maak leeg
+                calls.push(call);
+                updateCalls();
 
-            calls.forEach(call => {
-                if (emergencyMarkers[call.id]) return; // Skip als marker al bestaat
+                // Voeg marker toe
+                const icon = L.divIcon({
+                    className: '',
+                    html: `
+                        <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
+                            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=100&height=100&format=png"
+                                 onerror="this.onerror=null;this.src='https://via.placeholder.com/32';"
+                                 style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
+                            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
+                        </div>
+                    `,
+                    iconSize: [32, 42],
+                    iconAnchor: [16, 42]
+                });
 
-                // 🔴 Marker aanmaken
-                
-
-const icon = L.divIcon({
-    className: '',
-    html: `
-        <div style="position: relative; transform: translate(-50%, -50%); text-align: center;">
-            <img src="https://www.roblox.com/headshot-thumbnail/image?userId=${call.userId}&width=100&height=100&format=png"
-                 onerror="this.onerror=null;this.src='https://via.placeholder.com/32';"
-                 style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ef4444;" />
-            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #ef4444; margin: auto;"></div>
-        </div>
-    `,
-    iconSize: [32, 42],
-    iconAnchor: [16, 42]
-});
-
-const marker = L.marker([call.coordinates.y, call.coordinates.x], { icon }).addTo(mainMap).addTo(dashboardMap);
-
-
-                marker.addTo(mainMap).addTo(dashboardMap);
-                marker.bindPopup(`
-                    <b>112 - ${call.type}</b><br>
-                    ${call.location}<br>
-                    Speler: ${call.playerName}
-                `);
+                const marker = L.marker([call.coordinates.y, call.coordinates.x], { icon })
+                    .addTo(mainMap)
+                    .addTo(dashboardMap);
 
                 emergencyMarkers[call.id] = marker;
-
-                // Meldingkaart toevoegen
-                const div = document.createElement('div');
-                div.className = 'bg-gray-800 p-4 rounded shadow mb-3 melding';
-                div.innerHTML = `
-                    <div class="bg-white-200 p-4 rounded-lg shadow-md">
-                        <h3 class="text-lg font-semibold text-white">${call.type}</h3>
-                        <p class="text-white-500 text-sm mb-2.5 mt-1">
-                            <strong class="text-white-400">Locatie:</strong> ${call.location}
-                        </p>
-                        <p class="text-white-500 text-sm mb-2.5 mt-1">
-                            <strong class="text-white-400">Speler:</strong> ${call.playerName}
-                        </p>
-                        <div class="buttons mt-2">
-                            <button class="button accepteer bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="accepteerMelding('${call.timestamp}')">Accepteer</button>
-                            <button class="button meerinfo bg-gray-600 text-white p-2 rounded hover:bg-gray-700" onclick="meerInfo('${call.timestamp}')" data-id="${call.timestamp}">Meer info</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
+                marker.bindPopup(`<b>112 - ${call.type}</b><br>${call.location}<br>Speler: ${call.playerName}`);
             });
-
         })
         .catch(err => {
             console.error('❌ Fout bij ophalen meldingen:', err);
@@ -1877,7 +1863,7 @@ function renderRecentCalls() {
 
 // Functie om meer informatie over een melding te tonen
 function meerInfo(callId) {
-    const call = calls.find(c => Number(c.timestamp) === Number(callId));
+    const call = calls.find(c => String(c.timestamp) === String(callId));
     if (!call) {
         console.error("❌ Melding niet gevonden!");
         return;
