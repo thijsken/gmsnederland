@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { error } = require('console');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,13 +22,50 @@ let alarmQueue = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
 
+let users = [
+  { id: 1, name: "demo", apiKey: null }
+];
+
+function authenticateUser(req, res, next) {
+  const userId = req.header('X-User-ID'); // bijv. meegegeven door frontend
+
+  if (!userId) return res.status(401).json({ message: 'Geen gebruiker-ID opgegeven' });
+
+  let user = users.find(u => String(u.id) === String(userId));
+  if (!user) {
+    // Gebruiker niet gevonden? Voeg toe
+    user = { id: userId, name: `Gebruiker-${userId}`, apiKey: null };
+    users.push(user);
+  }
+
+  req.user = user;
+  next();
+}
+
+function requireApiKey(req, res, next) {
+  const apiKey = req.header('Authorization')?.replace('Bearer ', '');
+  const user = users.find(u => u.apiKey === apiKey);
+  if (!user) {
+    return res.status(401).json({ message: 'Ongeldige API-sleutel' });
+  }
+  req.user = user;
+  next();
+}
+
+
+app.post('/api/generate-key', authenticateUser, (req, res) => {
+  const apiKey = 'gms_' + crypto.randomUUID().replace(/-/g, '');
+  req.user.apiKey = apiKey;
+  res.json({ apiKey });
+});
+
 // 🌍 Dashboard root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 📥 POST: Melding ontvangen
-app.post('/api/meldingen', (req, res) => {
+app.post('/api/meldingen', requireApiKey, (req, res) => {
   const melding = req.body;
   if (!melding || !melding.type || !melding.location || !melding.playerName) {
     return res.status(400).json({ message: 'Fout: ongeldige melding' });
@@ -35,6 +73,7 @@ app.post('/api/meldingen', (req, res) => {
 
   melding.timestamp = Date.now();
   melding.status = "new"; // voeg status toe
+  melding.ownerId = req.user.id; // ← Koppel aan gebruiker
   meldingen.push(melding);
   console.log('📥 Nieuwe melding ontvangen:', melding);
 
@@ -42,7 +81,8 @@ app.post('/api/meldingen', (req, res) => {
 });
 
 // 📤 GET: Alle meldingen ophalen
-app.get('/api/meldingen', (req, res) => {
+app.get('/api/meldingen', requireApiKey, (req, res) => {
+  const userMeldingen = meldingen.filter(m => m.ownerId == req.user.id);
   res.json(meldingen);
 });
 
@@ -70,7 +110,7 @@ app.patch('/api/meldingen/:timestamp/status', (req, res) => {
 
 
 // ✅ POST: Eenheid aanmaken of bijwerken
-app.post('/api/units', (req, res) => {
+app.post('/api/units', requireApiKey, (req, res) => {
   const unit = req.body;
 
   if (!unit || !unit.id || !unit.type || !unit.location) {
@@ -88,12 +128,12 @@ app.post('/api/units', (req, res) => {
 });
 
 // ✅ GET: Alle eenheden ophalen
-app.get('/api/units', (req, res) => {
+app.get('/api/units', requireApiKey, (req, res) => {
   res.json(eenheden);
 });
 
 // ✅ POST: Luchtalarm-palen ontvangen vanuit Roblox
-app.post('/api/luchtalarm/palen', (req, res) => {
+app.post('/api/luchtalarm/palen', requireApiKey, (req, res) => {
   const data = req.body;
   if (!Array.isArray(data)) {
     return res.status(400).json({ message: 'Ongeldige paaldata' });
@@ -105,12 +145,12 @@ app.post('/api/luchtalarm/palen', (req, res) => {
 });
 
 // ✅ GET: Luchtalarm-palen ophalen
-app.get('/api/luchtalarm/palen', (req, res) => {
+app.get('/api/luchtalarm/palen', requireApiKey, (req, res) => {
   res.json(luchtalarmPalen);
 });
 
 // ✅ POST: Actie instellen voor luchtalarm
-app.post('/api/luchtalarm/actie', (req, res) => {
+app.post('/api/luchtalarm/actie', requireApiKey, (req, res) => {
   const { actie, id } = req.body;
   if (!actie || !id) {
     return res.status(400).json({ message: 'Actie of ID ontbreekt' });
@@ -122,7 +162,7 @@ app.post('/api/luchtalarm/actie', (req, res) => {
 });
 
 // ✅ GET: Ophalen luchtalarm-actie door Roblox
-app.get('/api/luchtalarm/actie', (req, res) => {
+app.get('/api/luchtalarm/actie', requireApiKey, (req, res) => {
   if (!laatsteLuchtalarmActie) {
     return res.status(204).send();
   }
@@ -134,7 +174,7 @@ app.get('/api/luchtalarm/actie', (req, res) => {
 });
 
 // ✅ POST: Posten ontvangen vanuit Roblox
-app.post('/api/posten', (req, res) => {
+app.post('/api/posten', requireApiKey, (req, res) => {
   const data = req.body;
   if (!Array.isArray(data)) {
     return res.status(400).json({ message: 'Ongeldige posten-data' });
@@ -146,12 +186,12 @@ app.post('/api/posten', (req, res) => {
 });
 
 // ✅ GET: Posten ophalen
-app.get('/api/posten', (req, res) => {
+app.get('/api/posten', requireApiKey, (req, res) => {
   res.json(posten);
 });
 
 // ✅ POST: Alarm triggeren vanuit dashboard
-app.post('/api/posten/alarm', (req, res) => {
+app.post('/api/posten/alarm', requireApiKey, (req, res) => {
   const { postId, trigger, omroep, adres, info, voertuig } = req.body;
 
   if (!postId || !trigger || !voertuig) {
@@ -176,13 +216,13 @@ app.post('/api/posten/alarm', (req, res) => {
 });
 
 // ✅ GET: Laat Roblox het alarm ophalen
-app.get('/api/posten/alarm', (req, res) => {
+app.get('/api/posten/alarm', requireApiKey, (req, res) => {
   const data = lastPostAlarm;
   lastPostAlarm = null; // reset na uitlezen
   res.json(data || {});
 });
 
-app.post('/api/amber', (req, res) => {
+app.post('/api/amber', requireApiKey, (req, res) => {
   const { name, userId, location, description, timestamp } = req.body;
 
   if (!name || !userId || !location || !description || !timestamp) {
@@ -197,13 +237,13 @@ app.post('/api/amber', (req, res) => {
   res.status(201).json({ message: "Amber Alert opgeslagen", alert });
 });
 
-app.get('/api/amber', (req, res) => {
+app.get('/api/amber', requireApiKey, (req, res) => {
   res.json(amberAlerts);
 });
 
 
 // ✅ POST: NLAlert verzenden
-app.post('/api/nlalert', (req, res) => {
+app.post('/api/nlalert', requireApiKey, (req, res) => {
   const { title, message, location, timestamp } = req.body;
 
   if (!title || !message || !location || !timestamp) {
@@ -219,7 +259,7 @@ app.post('/api/nlalert', (req, res) => {
 });
 
 // ✅ POST: ANPR-trigger vanaf Roblox
-app.post('/api/anpr', (req, res) => {
+app.post('/api/anpr', requireApiKey, (req, res) => {
   const { plate, location } = req.body;
 
   if (!plate || !location) {
@@ -251,7 +291,7 @@ app.post('/api/anpr', (req, res) => {
 
 
 // Get: Alle NLAlerts ophalen
-app.get('/api/nlalert', (req, res) => {
+app.get('/api/nlalert', requireApiKey, (req, res) => {
   res.json(nlAlerts);
 })
 // 🚀 Start server
