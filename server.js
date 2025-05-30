@@ -5,7 +5,15 @@ const { error } = require('console');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const corsOptions = {
+  origin: 'https://gmsnederland-3029e.web.app', // frontend domein toestaan
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'], // headers die je gebruikt
+  credentials: true, // als je cookies of auth headers toestaat
+};
+
+app.use(cors(corsOptions));
+// const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
