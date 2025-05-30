@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { error } = require('console');
-const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,17 +20,6 @@ let nlAlerts = [];
 let alarmQueue = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
-
-let users = [
-  { id: 1, name: "demo", apiKey: null }
-];
-
-
-app.post('/api/generate-key', authenticateUser, (req, res) => {
-  const apiKey = 'gms_' + crypto.randomUUID().replace(/-/g, '');
-  req.user.apiKey = apiKey;
-  res.json({ apiKey });
-});
 
 // 🌍 Dashboard root
 app.get('/', (req, res) => {
