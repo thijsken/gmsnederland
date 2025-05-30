@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { error } = require('console');
+const db = require('./firebase'); // ⬅ import Firestore
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +11,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json'); // Dit bestand haal je uit Firebase Console
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
+
+module.exports = db;
+
 
 // 🧠 Tijdelijke opslag
 let meldingen = [];
@@ -20,6 +33,24 @@ let nlAlerts = [];
 let alarmQueue = [];
 let laatsteLuchtalarmActie = null;
 let lastPostAlarm = null;
+
+app.post('/api/apikey/generate', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ message: 'userId is verplicht' });
+  }
+
+  try {
+    const apiKey = crypto.randomUUID(); // Genereer unieke key
+    await db.collection('apiKeys').doc(userId).set({ apiKey });
+
+    console.log(`🔑 API key gegenereerd voor gebruiker ${userId}`);
+    res.status(201).json({ apiKey });
+  } catch (err) {
+    console.error('❌ Fout bij opslaan API key:', err);
+    res.status(500).json({ message: 'Fout bij opslaan API key' });
+  }
+});
 
 // 🌍 Dashboard root
 app.get('/', (req, res) => {
