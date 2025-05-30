@@ -1,15 +1,8 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const { error } = require('console');
 const crypto = require('crypto');
-const admin = require('firebase-admin');
-
-// Firebase Admin SDK initialiseren
-const serviceAccount = require('./firebase-service-account.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-const db = admin.firestore();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,167 +11,262 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware: Firebase-token verifiëren
-async function verifyFirebaseToken(req, res, next) {
-  const authHeader = req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Geen geldig token opgegeven' });
-  }
-  const idToken = authHeader.replace('Bearer ', '');
+// 🧠 Tijdelijke opslag
+let meldingen = [];
+let eenheden = [];
+let luchtalarmPalen = [];
+let posten = [];
+let amberAlerts = [];
+let nlAlerts = [];
+let alarmQueue = [];
+let laatsteLuchtalarmActie = null;
+let lastPostAlarm = null;
 
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = { uid: decodedToken.uid, email: decodedToken.email };
-    next();
-  } catch (error) {
-    console.error('Tokenverificatie mislukt:', error);
-    return res.status(401).json({ message: 'Tokenverificatie mislukt' });
-  }
-}
+let users = [
+  { id: 1, name: "demo", apiKey: null }
+];
 
-// Middleware: API-key validatie
-async function requireApiKey(req, res, next) {
-  const apiKey = req.header('X-API-Key');
-  if (!apiKey) return res.status(401).json({ message: 'Geen API-key opgegeven' });
 
-  try {
-    const snapshot = await db.collection('apiKeys').where('apiKey', '==', apiKey).limit(1).get();
-    if (snapshot.empty) return res.status(401).json({ message: 'Ongeldige API-sleutel' });
-
-    const doc = snapshot.docs[0];
-    const uid = doc.id;
-    const userRecord = await admin.auth().getUser(uid);
-
-    req.user = { uid, email: userRecord.email, apiKey };
-    next();
-  } catch (err) {
-    console.error('Verificatie API-key mislukt:', err);
-    res.status(500).json({ message: 'Serverfout bij API-key verificatie' });
-  }
-}
-
-// Endpoint: Genereer API-key voor ingelogde gebruiker
-app.post('/api/generate-key', verifyFirebaseToken, async (req, res) => {
-  const apiKey = 'gms_' + crypto.randomBytes(32).toString('hex');
-
-  try {
-    await db.collection('apiKeys').doc(req.user.uid).set({
-      apiKey,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    res.json({ apiKey });
-  } catch (err) {
-    console.error('Fout bij opslaan in Firestore:', err);
-    res.status(500).json({ message: 'Fout bij opslaan van API-key' });
-  }
+app.post('/api/generate-key', authenticateUser, (req, res) => {
+  const apiKey = 'gms_' + crypto.randomUUID().replace(/-/g, '');
+  req.user.apiKey = apiKey;
+  res.json({ apiKey });
 });
 
-// Endpoint: Meldingen aanmaken
-app.post('/api/meldingen', requireApiKey, async (req, res) => {
-  const { type, location, playerName } = req.body;
-  if (!type || !location || !playerName) {
-    return res.status(400).json({ message: 'Ongeldige melding, ontbrekende velden' });
-  }
-
-  const melding = {
-    type,
-    location,
-    playerName,
-    timestamp: Date.now(),
-    status: 'new',
-    ownerId: req.user.uid
-  };
-
-  try {
-    const docRef = await db.collection('meldingen').add(melding);
-    res.status(201).json({ message: 'Melding opgeslagen', id: docRef.id, data: melding });
-  } catch (err) {
-    console.error('Fout bij opslaan melding:', err);
-    res.status(500).json({ message: 'Fout bij opslaan melding' });
-  }
+// 🌍 Dashboard root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Endpoint: Alle meldingen van gebruiker ophalen
-app.get('/api/meldingen', requireApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('meldingen')
-      .where('ownerId', '==', req.user.uid)
-      .orderBy('timestamp', 'desc')
-      .get();
-
-    const meldingen = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(meldingen);
-  } catch (err) {
-    console.error('Fout bij ophalen meldingen:', err);
-    res.status(500).json({ message: 'Fout bij ophalen meldingen' });
+// 📥 POST: Melding ontvangen
+app.post('/api/meldingen', (req, res) => {
+  const melding = req.body;
+  if (!melding || !melding.type || !melding.location || !melding.playerName) {
+    return res.status(400).json({ message: 'Fout: ongeldige melding' });
   }
+
+  melding.timestamp = Date.now();
+  melding.status = "new"; // voeg status toe
+  meldingen.push(melding);
+  console.log('📥 Nieuwe melding ontvangen:', melding);
+
+  res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
 });
 
-// Endpoint: Status van melding updaten
-app.patch('/api/meldingen/:id/status', requireApiKey, async (req, res) => {
-  const { id } = req.params;
+// 📤 GET: Alle meldingen ophalen
+app.get('/api/meldingen', (req, res) => {
+  res.json(meldingen);
+});
+
+app.patch('/api/meldingen/:timestamp/status', (req, res) => {
+  const { timestamp } = req.params;
   const { status } = req.body;
 
-  if (!status) return res.status(400).json({ message: 'Status is verplicht' });
+  console.log(`🔧 PATCH aanvraag ontvangen voor melding ${timestamp} met status "${status}"`);
 
-  try {
-    const docRef = db.collection('meldingen').doc(id);
-    const doc = await docRef.get();
-
-    if (!doc.exists) return res.status(404).json({ message: 'Melding niet gevonden' });
-
-    if (doc.data().ownerId !== req.user.uid)
-      return res.status(403).json({ message: 'Geen toegang tot deze melding' });
-
-    await docRef.update({ status });
-    res.json({ message: 'Status bijgewerkt', id, status });
-  } catch (err) {
-    console.error('Fout bij bijwerken status melding:', err);
-    res.status(500).json({ message: 'Fout bij bijwerken status melding' });
+  if (!["new", "accepted", "assigned", "closed"].includes(status)) {
+    console.warn(`❌ Ongeldige status ontvangen: ${status}`);
+    return res.status(400).json({ message: 'Ongeldige status' });
   }
+
+  const melding = meldingen.find(m => String(m.timestamp) === timestamp);
+  if (!melding) {
+    console.warn(`⚠️ Melding met timestamp ${timestamp} niet gevonden`);
+    return res.status(404).json({ message: 'Melding niet gevonden' });
+  }
+
+  melding.status = status;
+  console.log(`✅ Status van melding ${timestamp} succesvol gewijzigd naar "${status}"`);
+  res.json({ message: 'Status bijgewerkt', melding });
 });
 
-// Endpoint: Eenheid toevoegen of updaten
-app.post('/api/units', requireApiKey, async (req, res) => {
-  const { id, type, location } = req.body;
-  if (!id || !type || !location) {
-    return res.status(400).json({ message: 'Ongeldige eenheid, ontbrekende velden' });
+
+// ✅ POST: Eenheid aanmaken of bijwerken
+app.post('/api/units', (req, res) => {
+  const unit = req.body;
+
+  if (!unit || !unit.id || !unit.type || !unit.location) {
+    return res.status(400).json({ message: 'Ongeldige eenheid' });
   }
 
-  const unit = {
-    id,
-    type,
-    location,
-    ownerId: req.user.uid,
-    updatedAt: Date.now()
+  const index = eenheden.findIndex(u => u.id === unit.id);
+  if (index !== -1) {
+    eenheden[index] = unit;
+  } else {
+    eenheden.push(unit);
+  }
+
+  res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
+});
+
+// ✅ GET: Alle eenheden ophalen
+app.get('/api/units', (req, res) => {
+  res.json(eenheden);
+});
+
+// ✅ POST: Luchtalarm-palen ontvangen vanuit Roblox
+app.post('/api/luchtalarm/palen', (req, res) => {
+  const data = req.body;
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ message: 'Ongeldige paaldata' });
+  }
+
+  luchtalarmPalen = data;
+  console.log("📥 Paaldata ontvangen:", luchtalarmPalen.length);
+  res.json({ message: 'Paaldata opgeslagen' });
+});
+
+// ✅ GET: Luchtalarm-palen ophalen
+app.get('/api/luchtalarm/palen', (req, res) => {
+  res.json(luchtalarmPalen);
+});
+
+// ✅ POST: Actie instellen voor luchtalarm
+app.post('/api/luchtalarm/actie', (req, res) => {
+  const { actie, id } = req.body;
+  if (!actie || !id) {
+    return res.status(400).json({ message: 'Actie of ID ontbreekt' });
+  }
+
+  laatsteLuchtalarmActie = { actie, id, timestamp: Date.now() };
+  console.log(`🚨 Actie '${actie}' ontvangen voor paal '${id}'`);
+  res.status(200).json({ message: `Actie '${actie}' uitgevoerd op paal '${id}'` });
+});
+
+// ✅ GET: Ophalen luchtalarm-actie door Roblox
+app.get('/api/luchtalarm/actie', (req, res) => {
+  if (!laatsteLuchtalarmActie) {
+    return res.status(204).send();
+  }
+
+  const actie = laatsteLuchtalarmActie.actie;
+  laatsteLuchtalarmActie = null;
+  console.log(`📡 Roblox haalt actie op: ${actie}`);
+  res.json({ actie });
+});
+
+// ✅ POST: Posten ontvangen vanuit Roblox
+app.post('/api/posten', (req, res) => {
+  const data = req.body;
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ message: 'Ongeldige posten-data' });
+  }
+
+  posten = data;
+  console.log('📥 Posten ontvangen:', posten.length);
+  res.json({ message: 'Posten opgeslagen' });
+});
+
+// ✅ GET: Posten ophalen
+app.get('/api/posten', (req, res) => {
+  res.json(posten);
+});
+
+// ✅ POST: Alarm triggeren vanuit dashboard
+app.post('/api/posten/alarm', (req, res) => {
+  const { postId, trigger, omroep, adres, info, voertuig } = req.body;
+
+  if (!postId || !trigger || !voertuig) {
+    return res.status(400).json({ message: 'postId, trigger en voertuig zijn verplicht' });
+  }
+
+  const alarmData = {
+    postId,
+    trigger,
+    omroep: omroep || false,
+    adres: adres || "Geen adres",
+    info: info || "Geen info",
+    voertuig,
+    timestamp: Date.now()
   };
 
-  try {
-    const docRef = db.collection('units').doc(`${req.user.uid}_${id}`);
-    await docRef.set(unit, { merge: true });
-    res.json({ message: 'Eenheid opgeslagen', data: unit });
-  } catch (err) {
-    console.error('Fout bij opslaan eenheid:', err);
-    res.status(500).json({ message: 'Fout bij opslaan eenheid' });
-  }
+  posten.push(alarmData);
+  lastPostAlarm = alarmData;
+
+  console.log('🚨 Alarm opgeslagen:', alarmData);
+  res.status(200).json({ message: '✅ Alarm opgeslagen', data: alarmData });
 });
 
-// Endpoint: Alle units van gebruiker ophalen
-app.get('/api/units', requireApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('units')
-      .where('ownerId', '==', req.user.uid)
-      .get();
-
-    const units = snapshot.docs.map(doc => doc.data());
-    res.json(units);
-  } catch (err) {
-    console.error('Fout bij ophalen units:', err);
-    res.status(500).json({ message: 'Fout bij ophalen units' });
-  }
+// ✅ GET: Laat Roblox het alarm ophalen
+app.get('/api/posten/alarm', (req, res) => {
+  const data = lastPostAlarm;
+  lastPostAlarm = null; // reset na uitlezen
+  res.json(data || {});
 });
 
-// Start server
+app.post('/api/amber', (req, res) => {
+  const { name, userId, location, description, timestamp } = req.body;
+
+  if (!name || !userId || !location || !description || !timestamp) {
+    return res.status(400).json({ error: "Ontbrekende velden" });
+  }
+
+  const alert = { name, userId, location, description, timestamp };
+  amberAlerts.push(alert);
+
+  console.log("✅ Amber Alert opgeslagen:", alert);
+
+  res.status(201).json({ message: "Amber Alert opgeslagen", alert });
+});
+
+app.get('/api/amber', (req, res) => {
+  res.json(amberAlerts);
+});
+
+
+// ✅ POST: NLAlert verzenden
+app.post('/api/nlalert', (req, res) => {
+  const { title, message, location, timestamp } = req.body;
+
+  if (!title || !message || !location || !timestamp) {
+    return res.status(400).json({ error: "Ontbrekende velden voor NLAlert" });
+  }
+
+  const alert = { title, message, location, timestamp };
+  nlAlerts.push(alert);
+
+  console.log("📢 NLAlert opgeslagen:", alert);
+
+  res.status(201).json({ message: "NLAlert opgeslagen", alert });
+});
+
+// ✅ POST: ANPR-trigger vanaf Roblox
+app.post('/api/anpr', (req, res) => {
+  const { plate, location } = req.body;
+
+  if (!plate || !location) {
+    return res.status(400).json({ message: 'Plate of locatie ontbreekt' });
+  }
+
+  const verdachtePlaten = ['XX-123-X', '99-ABC-1', '00-POL-911'];
+  const isVerdacht = verdachtePlaten.includes(plate.toUpperCase());
+
+  if (isVerdacht) {
+    const melding = {
+      id: Date.now().toString(),
+      type: 'Verdacht voertuig',
+      location,
+      description: `ANPR hit op kenteken: ${plate}`,
+      playerName: 'ANPR Systeem',
+      userId: 0,
+      timestamp: Date.now(),
+      status: 'new',
+      coordinates: { x: 100, y: 100, z: 0 } // eventueel dynamisch maken
+    };
+    meldingen.push(melding);
+    console.log(`🚨 ANPR HIT - Melding aangemaakt voor kenteken ${plate}`);
+    return res.status(201).json({ message: 'Verdacht voertuig gemeld', data: melding });
+  }
+
+  res.status(200).json({ message: 'Kenteken gescand, geen hit' });
+});
+
+
+// Get: Alle NLAlerts ophalen
+app.get('/api/nlalert', (req, res) => {
+  res.json(nlAlerts);
+})
+// 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
 });
