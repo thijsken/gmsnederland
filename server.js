@@ -1,4 +1,4 @@
- // 🔧 Express + Firestore + Stripe setup
+// 🔧 Express + Firestore + Stripe setup
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -9,7 +9,14 @@ const Stripe = require('stripe');
 const app = express();
 const stripe = Stripe('sk_test_51RUYjVPLQUgW1JNriYW9FWG6YI33hjKKK0OvILsNUhM83uevbUcsqTZnIv96p47L1gNAwwHMtZg8Y1sh3xstSKES00jfzPMuZk');
 
-app.use(cors());
+const corsOptions = {
+  origin: 'https://gmsnederland-3029e.web.app',
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'x-api-key'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
