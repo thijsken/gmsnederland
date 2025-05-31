@@ -1586,9 +1586,20 @@ let bekendeMeldingen = new Set();
 
 function fetchEmergencyReports() {
     fetch(`${API_URL}/api/meldingen`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(errData => {
+                    throw new Error(`Server gaf fout: ${res.status} - ${JSON.stringify(errData)}`);
+                });
+            }
+            return res.json();
+        })
         .then(data => {
-            const nieuweMeldingen = data.filter(m => 
+            if (!Array.isArray(data)) {
+                throw new Error('Data is geen array');
+            }
+
+            const nieuweMeldingen = data.filter(m =>
                 m.status === 'new' && !bekendeMeldingen.has(m.timestamp)
             );
 
