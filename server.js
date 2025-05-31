@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./path/to/serviceAccountKey.json'); // pas aan naar jouw bestand
+const serviceAccount = require('./public/serviceAccountKey.json'); // pas aan naar jouw bestand
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
