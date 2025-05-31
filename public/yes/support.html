@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <!-- ✅ Voeg dit toe: -->
+    <link rel="icon" href="favicon.ico.png" type="image/x-icon">
+  <title>Support Dashboard</title>
+  <style>
+
+      .status-icon {
+    margin-left: 8px;
+    font-size: 1.1em;
+  }
+
+  /* Groen knipperen */
+  @keyframes flashGreen {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: lightgreen; }
+  }
+
+  .flash-green {
+    animation: flashGreen 1s ease-in-out 3;
+  }
+
+  /* Wacht knop stijl */
+  .status-btn {
+    margin-left: 10px;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .btn-wacht {
+    background-color: #f39c12;
+    color: white;
+  }
+
+  .btn-behandelen {
+    background-color: #27ae60;
+    color: white;
+  }
+
+        @keyframes flashYellow {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: yellow; }
+    }
+
+    .flash-yellow {
+    animation: flashYellow 1s ease-in-out 3;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 250px;
+      background-color: #2c3e50;
+      color: white;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    #sidebar h2 {
+      font-size: 1.2rem;
+      margin-top: 0;
+    }
+
+    #chat-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    #chat-list li {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #34495e;
+    }
+
+    #chat-list li:hover {
+      background-color: #34495e;
+    }
+
+    #chat-list li.active {
+      background-color: #1abc9c;
+    }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chat-header {
+      background-color: #ecf0f1;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-weight: bold;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+
+    .message-wrapper {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 16px;
+      max-width: 75%;
+    }
+    
+    /* Plaats agentberichten links */
+    .message-wrapper.agent {
+    align-self: flex-start;
+    text-align: left;
+    }
+
+    /* Plaats klantberichten rechts */
+    .message-wrapper.customer {
+    align-self: flex-end;
+    text-align: right;
+    }
+
+    .sender-label {
+      font-size: 0.8em;
+      margin-bottom: 3px;
+      color: #999;
+    }
+
+    .sender-label.agent {
+        color:#1abc9c;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .sender-label.customer {
+        color: #1b5320;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      line-height: 1.4;
+    }
+
+    /* Berichten stijl */
+    .message.agent {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    color: #333;
+    border-radius: 16px 16px 16px 4px;
+    padding: 12px 16px;
+    display: inline-block;
+    }
+
+    .message.customer {
+    background: #d2f8c6;
+    color: #1b5e20;
+    border-radius: 16px 16px 4px 16px;
+    padding: 12px 16px;
+    display: inline-block;
+    }
+
+    /* Tijd */
+    .message-time {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 4px;
+    }
+
+    #input-area {
+      display: flex;
+      border-top: 1px solid #ccc;
+      padding: 10px;
+      background: white;
+    }
+
+    #agent-msg-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #send-agent-btn {
+      padding: 10px 20px;
+      margin-left: 10px;
+      background-color: #1abc9c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #send-agent-btn:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+
+    #close-chat-btn {
+      margin-left: 15px;
+      padding: 4px 10px;
+      border: none;
+      background: #e74c3c;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>Actieve chats</h2>
+  <ul id="chat-list" role="listbox" aria-label="Lijst met actieve chats"></ul>
+</div>
+
+<div id="main">
+  <div id="chat-header">
+    <span id="chat-title">Selecteer een chat om te starten</span>
+    <button id="close-chat-btn" title="Sluit deze chat" style="display:none;">Sluit chat</button>
+    <button id="process-chat-btn" title="Zet chat in behandeling" style="display:none; margin-left: 10px; background-color:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer;">In behandeling</button>
+  </div>
+  <div id="messages" aria-live="polite" aria-relevant="additions"></div>
+  <div id="input-area" style="display:none;">
+    <input
+      type="text"
+      id="agent-msg-input"
+      placeholder="Typ je bericht..."
+      autocomplete="off"
+      aria-label="Typ je bericht"
+    />
+    <button id="send-agent-btn" disabled>Verstuur</button>
+  </div>
+</div>
+
+<audio id="new-chat-sound" src="newchat.mp3" preload="auto"></audio>
+
+<script type="module">
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import {
+    getFirestore, collection, query, orderBy, onSnapshot,
+    doc, addDoc, updateDoc, serverTimestamp,
+    getDoc, getDocs, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuHf66GFU9KKFVkJPAS3a1qaX2nG9xH_s",
+    authDomain: "gmsnederland-3029e.firebaseapp.com",
+    projectId: "gmsnederland-3029e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const chatListEl = document.getElementById('chat-list');
+  const messagesEl = document.getElementById('messages');
+  const chatTitleEl = document.getElementById('chat-title');
+  const inputAreaEl = document.getElementById('input-area');
+  const agentMsgInput = document.getElementById('agent-msg-input');
+  const sendAgentBtn = document.getElementById('send-agent-btn');
+  const closeChatBtn = document.getElementById('close-chat-btn');
+  const processChatBtn = document.getElementById('process-chat-btn');
+
+  let currentChatId = null;
+  let unsubscribeMessages = null;
+  let currentCustomerName = null;
+
+  function highlightNewChat(chatElement) {
+  chatElement.classList.add('flash-yellow');
+  setTimeout(() => {
+    chatElement.classList.remove('flash-yellow');
+  }, 3000); // na 3 seconden stoppen met knipperen
+}
+
+function loadChats() {
+  const newChatSound = document.getElementById('new-chat-sound');
+  const chatsRef = collection(db, 'chats');
+  const q = query(chatsRef, orderBy('lastActivity', 'desc'));
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const chat = change.doc.data();
+        if (!chatListEl.querySelector(`li[data-chat-id="${change.doc.id}"]`)) {
+          const li = createChatListItem(change.doc.id, chat);
+          chatListEl.insertBefore(li, chatListEl.firstChild);
+          highlightNewChat(li);
+          newChatSound.play().catch(e => console.log("Audio play prevented:", e));
+        }
+      }
+      if (change.type === 'removed') {
+        const li = chatListEl.querySelector(`li[data-chat-id="${change.doc.id}"]`);
+        if (li) li.remove();
+      }
+      if (change.type === 'modified') {
+        const li = chatListEl.querySelector(`li[data-chat-id="${change.doc.id}"]`);
+        if (li) {
+          const chat = change.doc.data();
+          updateChatListItem(li, chat);
+        }
+      }
+    });
+  });
+}
+
+
+function createChatListItem(chatId, chat) {
+  const li = document.createElement('li');
+  li.dataset.chatId = chatId;
+  li.setAttribute('role', 'option');
+
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = chat.customerName || "Anonieme klant";
+  li.appendChild(nameSpan);
+
+  // Status icoon (wacht / in behandeling)
+  const statusIcon = document.createElement('span');
+  statusIcon.className = 'status-icon';
+  li.appendChild(statusIcon);
+
+  // Wacht knop
+  const btnWacht = document.createElement('button');
+  btnWacht.textContent = 'Wacht';
+  btnWacht.className = 'status-btn btn-wacht';
+  btnWacht.title = 'Zet deze chat in de wacht';
+  li.appendChild(btnWacht);
+
+  // Event wacht knop
+  btnWacht.onclick = async (e) => {
+    e.stopPropagation();
+    await updateDoc(doc(db, 'chats', chatId), {
+      status: 'waiting'
+    });
+  };
+
+  return li;
+}
+
+function updateChatListItem(li, chat) {
+  const statusIcon = li.querySelector('.status-icon');
+  li.textContent = chat.customerName || "Anonieme klant";
+  li.appendChild(statusIcon);
+
+  if (chat.status === 'waiting') {
+    statusIcon.textContent = '🕒';
+    li.classList.remove('flash-yellow', 'flash-green');
+  } else if (chat.status === 'processing') {
+    statusIcon.textContent = '🟢';
+    li.classList.remove('flash-yellow');
+    li.classList.add('flash-green');
+  } else {
+    statusIcon.textContent = '';
+    li.classList.remove('flash-yellow', 'flash-green');
+  }
+}
+
+
+// voor het geel knipperen
+  chatListEl.addEventListener('click', async e => {
+    if (e.target.tagName === 'LI') {
+        e.target.classList.remove('flash-yellow');
+      openChat(e.target.dataset.chatId);
+    }
+  });
+// voor de chat sluiten.
+  closeChatBtn.addEventListener('click', async () => {
+    if (!currentChatId) return;
+
+    const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+    await addDoc(messagesRef, {
+      sender: 'agent',
+      content: 'Deze chat met GMSNederland is beëindigd. Je kunt op elk moment een nieuwe chat starten.',
+      timestamp: serverTimestamp()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const messagesSnapshot = await getDocs(messagesRef);
+    const batch = writeBatch(db);
+    messagesSnapshot.forEach(docSnap => {
+      batch.delete(doc(db, 'chats', currentChatId, 'messages', docSnap.id));
+    });
+
+    const chatDocRef = doc(db, 'chats', currentChatId);
+    batch.delete(chatDocRef);
+    await batch.commit();
+
+    if (unsubscribeMessages) unsubscribeMessages();
+    currentChatId = null;
+    currentCustomerName = null;
+    messagesEl.innerHTML = '';
+    const typingIndicator = document.createElement('div');
+    typingIndicator.id = 'typing-indicator';
+    typingIndicator.style.fontStyle = 'italic';
+    typingIndicator.style.color = '#888';
+    typingIndicator.style.marginTop = '8px';
+    typingIndicator.style.display = 'none';
+    messagesEl.appendChild(typingIndicator);
+    chatTitleEl.textContent = 'Selecteer een chat om te starten';
+    inputAreaEl.style.display = 'none';
+    closeChatBtn.style.display = 'none';
+    processChatBtn.style.display = 'none';
+
+    const activeLi = chatListEl.querySelector('li.active');
+    if (activeLi) activeLi.classList.remove('active');
+  });
+
+  processChatBtn.addEventListener('click', async () => {
+  if (!currentChatId) return;
+
+  // Update chat status naar 'processing'
+  await updateDoc(doc(db, 'chats', currentChatId), {
+    status: 'processing'
+  });
+
+  // Stuur automatisch bericht
+  const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+  await addDoc(messagesRef, {
+    sender: 'agent',
+    content: 'GMS Nederland — U bent verbonden met onze supportafdeling. Een ervaren specialist staat direct voor u klaar om uw vraag snel, effectief en met de hoogste kwaliteit te beantwoorden. Wij danken u voor uw vertrouwen in GMS Nederland en helpen u graag verder.',
+    logoUrl: '/public/gmsnederlandgijsachtergrond.png',  // Vul hier de juiste URL in
+    timestamp: serverTimestamp()
+  });
+});
+
+  async function openChat(chatId) {
+    if (unsubscribeMessages) unsubscribeMessages();
+
+    currentChatId = chatId;
+    messagesEl.innerHTML = '';
+    inputAreaEl.style.display = 'flex';
+    agentMsgInput.value = '';
+    sendAgentBtn.disabled = true;
+    closeChatBtn.style.display = 'inline-block';
+    processChatBtn.style.display = 'inline-block';
+
+    const chatDocRef = doc(db, 'chats', chatId);
+    try {
+      const chatDocSnap = await getDoc(chatDocRef);
+      if (chatDocSnap.exists()) {
+        const data = chatDocSnap.data();
+        currentCustomerName = data.customerName || 'Anonieme klant';
+        chatTitleEl.textContent = 'Chat met ' + currentCustomerName;
+      } else {
+        currentCustomerName = 'Klant';
+        chatTitleEl.textContent = 'Chat';
+      }
+    } catch {
+      currentCustomerName = 'Klant';
+      chatTitleEl.textContent = 'Chat';
+    }
+
+    [...chatListEl.children].forEach(li => {
+      if (li.dataset.chatId === chatId) {
+        li.classList.add('active');
+        li.setAttribute('aria-selected', 'true');
+      } else {
+        li.classList.remove('active');
+        li.removeAttribute('aria-selected');
+      }
+    });
+
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesRef, orderBy('timestamp'));
+    let typingIndicator = document.getElementById('typing-indicator');
+    if (!typingIndicator) {
+    typingIndicator = document.createElement('div');
+    typingIndicator.id = 'typing-indicator';
+    typingIndicator.style.fontStyle = 'italic';
+    typingIndicator.style.color = '#888';
+    typingIndicator.style.marginTop = '8px';
+    typingIndicator.textContent = 'Support is aan het typen...';
+    typingIndicator.style.display = 'none';
+    messagesEl.appendChild(typingIndicator);
+    }
+    unsubscribeMessages = onSnapshot(q, snapshot => {
+    messagesEl.innerHTML = '';
+    snapshot.forEach(docSnap => {
+        const msg = docSnap.data();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-wrapper';
+
+        // Afzender naam boven het bericht
+        const senderLabel = document.createElement('div');
+        senderLabel.className = 'sender-label ' + (msg.sender === 'agent' ? 'agent' : 'customer');
+        senderLabel.textContent = msg.sender === 'agent' ? 'GMSNederland' : currentCustomerName;
+
+        const div = document.createElement('div');
+        div.className = 'message ' + (msg.sender === 'agent' ? 'agent' : 'customer');
+
+        if (msg.logoUrl) {
+            const logoImg = document.createElement('img');
+            logoImg.src = msg.logoUrl;
+            logoImg.alt = 'GMS Nederland logo';
+            logoImg.style.width = '40px';
+            logoImg.style.marginRight = '8px';  // Ruimte tussen logo en tekst
+            logoImg.style.borderRadius = '8px';
+            logoImg.style.verticalAlign = 'middle'; // Logo mooi uitlijnen met tekst
+            div.appendChild(logoImg);
+        }
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = msg.content;
+        div.appendChild(textSpan);
+
+        // Tijd onder bericht
+        const timeSpan = document.createElement('div');
+        if (msg.timestamp && msg.timestamp.toDate) {
+        const time = msg.timestamp.toDate();
+        const hours = time.getHours().toString().padStart(2, '0');
+        const minutes = time.getMinutes().toString().padStart(2, '0');
+        timeSpan.textContent = `${hours}:${minutes}`;
+        } else {
+        timeSpan.textContent = '';
+        }
+        timeSpan.className = 'message-time';
+
+        wrapper.appendChild(senderLabel);
+        wrapper.appendChild(div);
+        wrapper.appendChild(timeSpan);
+        messagesEl.appendChild(wrapper);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+}
+
+  agentMsgInput.addEventListener('input', () => {
+    sendAgentBtn.disabled = !agentMsgInput.value.trim();
+
+    setAgentTypingStatus(true);
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        setAgentTypingStatus(false);
+    }, 2000);
+  });
+
+    agentMsgInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter' && !sendAgentBtn.disabled) {
+        e.preventDefault();           // <-- dit voorkomt dat Enter iets extra doet
+        sendMessage();
+    }
+    });
+
+  sendAgentBtn.onclick = sendMessage;
+
+  async function sendMessage() {
+    if (!currentChatId) return;
+    const text = agentMsgInput.value.trim();
+    if (!text) return;
+
+    const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+    await addDoc(messagesRef, {
+      sender: 'agent',
+      content: text,
+      timestamp: serverTimestamp()
+    });
+
+    const chatDocRef = doc(db, 'chats', currentChatId);
+    await updateDoc(chatDocRef, {
+      lastMessage: text,
+      lastActivity: serverTimestamp()
+    });
+
+    agentMsgInput.value = '';
+    sendAgentBtn.disabled = true;
+  }
+
+  loadChats();
+
+    import { setDoc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+    let typingTimeout;
+
+    function setAgentTypingStatus(isTyping) {
+    if (!currentChatId) return;
+
+    const typingRef = doc(db, 'chats', currentChatId);
+    updateDoc(typingRef, {
+        agentTyping: isTyping
+    });
+    }
+
+</script>
+
+</body>
+</html>

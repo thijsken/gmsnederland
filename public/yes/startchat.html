@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <!-- ✅ Voeg dit toe: -->
+    <link rel="icon" href="favicon.ico.png" type="image/x-icon">
+  <title>GMS_Nederland Live Chat Support</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #004aad, #1a73e8);
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #222;
+    }
+
+    #chat-widget {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 74, 173, 0.25);
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    #chat-header {
+      background: #004aad;
+      color: #fff;
+      padding: 22px 28px;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      user-select: none;
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.15);
+    }
+
+    #start-screen {
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #customer-name {
+      padding: 16px 20px;
+      font-size: 1rem;
+      border: 2px solid #ccc;
+      border-radius: 16px;
+      transition: border-color 0.25s ease;
+    }
+    #customer-name:focus {
+      border-color: #004aad;
+      outline: none;
+      box-shadow: 0 0 6px #1a73e8aa;
+    }
+
+    #start-chat {
+      background: #004aad;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 16px 0;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    #start-chat:disabled {
+      background: #a3bff7;
+      cursor: not-allowed;
+    }
+    #start-chat:not(:disabled):hover {
+      background: #003780;
+    }
+
+    #chat-container {
+      display: none;
+      flex-direction: column;
+      height: 500px;
+      background: #f5f7fb;
+    }
+
+    #messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: #004aad #d1d9e6;
+    }
+    #messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    #messages::-webkit-scrollbar-track {
+      background: #d1d9e6;
+      border-radius: 4px;
+    }
+    #messages::-webkit-scrollbar-thumb {
+      background-color: #004aad;
+      border-radius: 4px;
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 14px 22px;
+      border-radius: 28px;
+      font-size: 1rem;
+      line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message.customer {
+      align-self: flex-end;
+      background: #d0f0c0;
+      color: #1e3d00;
+      border-bottom-right-radius: 8px;
+      font-weight: 600;
+    }
+
+    .message.agent {
+      align-self: flex-start;
+      background: #ffffff;
+      border: 1px solid #bbb;
+      color: #222;
+      border-bottom-left-radius: 8px;
+      font-weight: 500;
+    }
+
+    #input-area {
+      padding: 18px 28px;
+      border-top: 1.5px solid #ccc;
+      display: flex;
+      gap: 14px;
+      background: #fff;
+    }
+
+    #msg-input {
+      flex-grow: 1;
+      font-size: 1rem;
+      padding: 16px 20px;
+      border: 2px solid #ccc;
+      border-radius: 18px;
+      transition: border-color 0.25s ease;
+    }
+    #msg-input:focus {
+      border-color: #004aad;
+      outline: none;
+      box-shadow: 0 0 8px #1a73e8cc;
+    }
+
+    #send-btn {
+      background: #004aad;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 16px 24px;
+      border-radius: 18px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    #send-btn:disabled {
+      background: #a3bff7;
+      cursor: not-allowed;
+    }
+    #send-btn:not(:disabled):hover {
+      background: #003780;
+    }
+
+    @media (max-width: 480px) {
+      #chat-widget {
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      #chat-container {
+        height: calc(100vh - 70px);
+      }
+      #start-screen {
+        padding: 20px 24px;
+      }
+      #messages {
+        padding: 16px 20px;
+      }
+      #input-area {
+        padding: 14px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+    <div id="typing-indicator" style="display: none; padding: 0 28px 8px; font-size: 0.9rem; color: #555;">
+  GMS Nederland is aan het typen...
+</div>
+
+<div id="chat-widget" role="region" aria-label="Live chat ondersteuning GMSNederland">
+  <div id="chat-header">GMS_Nederland_Live_Chat</div>
+
+  <section id="start-screen">
+    <label for="customer-name" class="visually-hidden">Jouw naam</label>
+    <input type="text" id="customer-name" placeholder="Voer je naam in..." autocomplete="off" aria-required="true" />
+    <button id="start-chat" disabled aria-disabled="true" aria-label="Start de chat">Start chat</button>
+  </section>
+
+  <section id="chat-container" aria-live="polite" aria-relevant="additions" aria-atomic="false">
+    <div id="messages" role="log" aria-live="polite" aria-atomic="false"></div>
+    <form id="input-area" onsubmit="return false;">
+      <label for="msg-input" class="visually-hidden">Typ je bericht</label>
+      <input type="text" id="msg-input" placeholder="Typ je bericht..." autocomplete="off" aria-label="Typ je bericht" />
+      <button id="send-btn" disabled aria-disabled="true" aria-label="Verstuur bericht">Verstuur</button>
+    </form>
+  </section>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuHf66GFU9KKFVkJPAS3a1qaX2nG9xH_s",
+    authDomain: "gmsnederland-3029e.firebaseapp.com",
+    projectId: "gmsnederland-3029e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const customerNameInput = document.getElementById('customer-name');
+  const startChatBtn = document.getElementById('start-chat');
+  const chatContainer = document.getElementById('chat-container');
+  const startScreen = document.getElementById('start-screen');
+  const messagesDiv = document.getElementById('messages');
+  const msgInput = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  let currentChatId = null;
+  let unsubscribeMessages = null;
+  let unsubscribeChatStatus = null;
+  let customerName = '';
+
+  // Enable start button only if name entered
+  customerNameInput.addEventListener('input', () => {
+    const valid = customerNameInput.value.trim().length > 0;
+    startChatBtn.disabled = !valid;
+    startChatBtn.setAttribute('aria-disabled', String(!valid));
+  });
+
+  startChatBtn.onclick = async () => {
+    if (unsubscribeMessages) {
+        unsubscribeMessages();
+        unsubscribeMessages = null;
+    }
+    if (unsubscribeChatStatus) {
+        unsubscribeChatStatus();
+        unsubscribeChatStatus = null;
+    }
+    customerName = customerNameInput.value.trim();
+    if (!customerName) return;
+
+    startChatBtn.disabled = true;
+    customerNameInput.disabled = true;
+
+    const chatDocRef = await addDoc(collection(db, 'chats'), {
+      customerName,
+      status: 'open',
+      createdAt: serverTimestamp(),
+      lastActivity: serverTimestamp(),
+      lastMessage: null
+    });
+
+    currentChatId = chatDocRef.id;
+    startScreen.style.display = 'none';
+    chatContainer.style.display = 'flex';
+    msgInput.focus();
+    sendBtn.disabled = true;
+    sendBtn.setAttribute('aria-disabled', 'true');
+
+    // Welkomstbericht agent
+    const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+    await addDoc(messagesRef, {
+      sender: 'agent',
+      content: `Hallo ${customerName}! Welkom bij GMSNederland. We staan klaar om je te helpen. Stel gerust je vraag!`,
+      timestamp: serverTimestamp()
+    });
+
+    listenForMessages();
+    listenForChatStatus();
+    listenForAgentTyping(); // <-- nieuw
+  };
+
+  sendBtn.onclick = sendMessage;
+
+let typingTimeout;
+
+msgInput.addEventListener('input', async () => {
+  const valid = msgInput.value.trim().length > 0;
+  sendBtn.disabled = !valid;
+  sendBtn.setAttribute('aria-disabled', String(!valid));
+
+  if (!currentChatId) return;
+
+  // Zet 'customerTyping' op true
+  await updateDoc(doc(db, 'chats', currentChatId), {
+    customerTyping: true
+  });
+
+  // Reset na 2 seconden inactiviteit
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(async () => {
+    await updateDoc(doc(db, 'chats', currentChatId), {
+      customerTyping: false
+    });
+  }, 2000);
+});
+
+
+msgInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter' && !sendBtn.disabled) {
+    e.preventDefault(); // <-- voeg dit toe
+    sendMessage();
+  }
+});
+
+
+  async function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text || !currentChatId) return;
+
+    const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+    await addDoc(messagesRef, {
+      sender: 'customer',
+      content: text,
+      timestamp: serverTimestamp()
+    });
+
+    await updateDoc(doc(db, 'chats', currentChatId), {
+      lastMessage: text,
+      lastActivity: serverTimestamp()
+    });
+
+    msgInput.value = '';
+    sendBtn.disabled = true;
+    sendBtn.setAttribute('aria-disabled', 'true');
+  }
+
+function listenForMessages() {
+  // Unsubscribe als er al een listener actief is
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+  }
+
+  const messagesRef = collection(db, 'chats', currentChatId, 'messages');
+  const q = query(messagesRef, orderBy('timestamp'));
+
+  unsubscribeMessages = onSnapshot(q, snapshot => {
+    messagesDiv.innerHTML = '';
+    snapshot.forEach(docSnap => {
+      const msg = docSnap.data();
+      const div = document.createElement('div');
+      div.className = 'message ' + (msg.sender === 'customer' ? 'customer' : 'agent');
+
+      const nameDiv = document.createElement('div');
+      nameDiv.style.fontWeight = '700';
+      nameDiv.style.fontSize = '0.85rem';
+      nameDiv.style.marginBottom = '4px'; 
+      nameDiv.style.color = msg.sender == 'customer' ? '#1b5e200' : '#2575fc';
+      nameDiv.textContent = msg.sender == 'customer' ? 'jij' : 'GMS Nederland';
+      div.appendChild(nameDiv);
+
+      const contentSpan = document.createElement('span');
+      contentSpan.textContent = msg.content;
+      div.appendChild(contentSpan);
+
+      if (msg.timestamp && msg.timestamp.toDate) {
+        const time = msg.timestamp.toDate();
+        const hours = time.getHours().toString().padStart(2, '0');
+        const minutes = time.getMinutes().toString().padStart(2, '0');
+        const timeSpan = document.createElement('div');
+        timeSpan.textContent = `${hours}:${minutes}`;
+        timeSpan.style.fontSize = '0.75rem';
+        timeSpan.style.color = '#888';
+        timeSpan.style.marginTop = '4px';
+        div.appendChild(timeSpan);
+      }
+
+      messagesDiv.appendChild(div);
+    });
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
+
+  function listenForChatStatus() {
+    const chatRef = doc(db, 'chats', currentChatId);
+    onSnapshot(chatRef, snapshot => {
+      const chatData = snapshot.data();
+      if (chatData?.status === 'closed') {
+        const closedMsg = document.createElement('div');
+        closedMsg.className = 'message agent';
+        closedMsg.textContent = 'Deze chat is gesloten. Je kunt geen berichten meer versturen. Bedankt voor je bezoek aan GMSNederland!';
+        messagesDiv.appendChild(closedMsg);
+        msgInput.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.setAttribute('aria-disabled', 'true');
+      }
+    });
+  }
+
+  function listenForAgentTyping() {
+  const chatRef = doc(db, 'chats', currentChatId);
+  unsubscribeChatStatus = onSnapshot(chatRef, snapshot => {
+    const data = snapshot.data();
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (data?.isTyping) {
+      typingIndicator.style.display = 'block';
+    } else {
+      typingIndicator.style.display = 'none';
+    }
+  });
+}
+
+function isChatOpen() {
+  // Nederlandse tijd (Amsterdam) in UTC+1 of UTC+2 afhankelijk van zomer-/wintertijd
+  const now = new Date();
+
+  // Tijdzone offset in minuten van UTC voor Amsterdam (NL)
+  // Houd rekening met zomer-/wintertijd automatisch met Intl API
+  const timeZone = 'Europe/Amsterdam';
+  const options = { timeZone, hour12: false, hour: '2-digit', minute: '2-digit' };
+  const timeParts = new Intl.DateTimeFormat('nl-NL', options).formatToParts(now);
+  let hour = 0;
+  let minute = 0;
+  for (const part of timeParts) {
+    if (part.type === 'hour') hour = parseInt(part.value, 10);
+    if (part.type === 'minute') minute = parseInt(part.value, 10);
+  }
+
+  // Chat open van 09:00 tot 20:00
+  const openHour = 9;
+  const closeHour = 20;
+
+  // Return true als tijd binnen open venster valt
+  return hour >= openHour && hour < closeHour;
+}
+
+function updateChatAvailability() {
+  const chatOpen = isChatOpen();
+
+  if (chatOpen) {
+    startChatBtn.disabled = customerNameInput.value.trim().length === 0;
+    startChatBtn.setAttribute('aria-disabled', String(startChatBtn.disabled));
+    customerNameInput.disabled = false;
+    document.getElementById('start-screen').querySelector('.closed-message')?.remove();
+  } else {
+    // Chat is gesloten: disable input en toon melding
+    startChatBtn.disabled = true;
+    startChatBtn.setAttribute('aria-disabled', 'true');
+    customerNameInput.disabled = true;
+
+    if (!document.querySelector('.closed-message')) {
+      const msg = document.createElement('div');
+      msg.className = 'closed-message';
+      msg.style.color = '#004aad';
+      msg.style.padding = '20px';
+      msg.style.fontWeight = '600';
+      msg.style.textAlign = 'center';
+      msg.textContent = 'Onze livechat is op dit moment gesloten en gaat weer open om 09:00 uur. Heeft u een spoedvraag? Stuur dan gerust een e-mail naar gmsnederlandsupport@gmail.com. Wij doen ons uiterste best om binnen 48 uur te reageren, met uitzondering van het weekend.';
+      const startScreen = document.getElementById('start-screen');
+      startScreen.appendChild(msg);
+    }
+  }
+}
+
+// Check chat beschikbaarheid direct bij laden en elke minuut opnieuw
+updateChatAvailability();
+setInterval(updateChatAvailability, 60 * 1000);
+
+// Ook controleren bij input, alleen als chat open is
+customerNameInput.addEventListener('input', () => {
+  if (isChatOpen()) {
+    const valid = customerNameInput.value.trim().length > 0;
+    startChatBtn.disabled = !valid;
+    startChatBtn.setAttribute('aria-disabled', String(!valid));
+  }
+});
+
+
+</script>
+
+<!-- Visually hidden label helper for accessibility -->
+<style>
+  .visually-hidden { 
+    position: absolute !important; 
+    height: 1px; 
+    width: 1px; 
+    overflow: hidden; 
+    clip: rect(1px, 1px, 1px, 1px); 
+    white-space: nowrap; 
+  }
+</style>
+
+</body>
+</html>
