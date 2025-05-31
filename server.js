@@ -13,13 +13,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-let meldingen = [];
-let posten = [];
-let luchtalarmPalen = [];
-let laatsteLuchtalarmActie = null;
-let lastPostAlarm = null;
-
-
 // ✅ Firebase Initialisatie
 const serviceAccount = require('./serviceAccountKey.json');
 
@@ -28,18 +21,6 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-
-async function authenticateApiKey(req, res, next) {
-  const apiKey = req.header('x-api-key');
-  if (!apiKey) return res.status(401).json({ message: 'API key ontbreekt' });
-
-  const snapshot = await db.collection('apiKeys').where('apiKey', '==', apiKey).get();
-  if (snapshot.empty) return res.status(403).json({ message: 'Ongeldige API key' });
-
-  req.userId = snapshot.docs[0].id; // sla userId op in request
-  next();
-}
-
 
 app.post('/create-payment-intent', async (req, res) => {
   const { amount, packageName } = req.body;
@@ -88,40 +69,24 @@ app.get('/', (req, res) => {
 });
 
 // 📥 POST: Melding ontvangen
-app.post('/api/meldingen', authenticateApiKey, async (req, res) => {
+app.post('/api/meldingen', (req, res) => {
   const melding = req.body;
-  if (!melding.type || !melding.location || !melding.playerName) {
+  if (!melding || !melding.type || !melding.location || !melding.playerName) {
     return res.status(400).json({ message: 'Fout: ongeldige melding' });
   }
 
   melding.timestamp = Date.now();
   melding.status = "new"; // voeg status toe
-  melding.userId = req.userId;
-  try {
-    await db.collection('meldingen').add(melding);
-    console.log('📥 Nieuwe melding ontvangen: ', melding);
-    res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
-  } catch (err) {
-    console.error('Fout bij het opslaan meldingen:', err);
-    res.status(500).json({ message: 'Fout bij opslaan melding'});
-  }
+  meldingen.push(melding);
+  console.log('📥 Nieuwe melding ontvangen:', melding);
+
+  res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
 });
-  // meldingen.push(melding);
 
 // 📤 GET: Alle meldingen ophalen
-app.get('/api/meldingen', authenticateApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('meldingen').where('userId', '==', req.userId).get();
-    const meldingen = snapshot.docs.map(doc => doc.data());
-    res.json(meldingen);
-  } catch (err) {
-    console.error(' Fout bij ophalen meldingen:', err);
-    res.status(500).json({message: 'Fout bij ophalen meldingen' });
-  }
+app.get('/api/meldingen', (req, res) => {
+  res.json(meldingen);
 });
-
-  // const userMeldingen = meldingen.filter(m => m.userId == req.userId);
-  // res.json(userMeldingen);
 
 app.patch('/api/meldingen/:timestamp/status', (req, res) => {
   const { timestamp } = req.params;
@@ -147,31 +112,26 @@ app.patch('/api/meldingen/:timestamp/status', (req, res) => {
 
 
 // ✅ POST: Eenheid aanmaken of bijwerken
-app.post('/api/units', authenticateApiKey, async (req, res) => {
+app.post('/api/units', (req, res) => {
   const unit = req.body;
+
   if (!unit || !unit.id || !unit.type || !unit.location) {
     return res.status(400).json({ message: 'Ongeldige eenheid' });
   }
-  unit.userId = req.userId;
-  try {
-    await db.collection('units').add(unit);
-    res.status(200).json({ meessage: 'Eenheid opgeslagen', data: unit});
-  } catch (err) {
-    console.error(' Fout bij opslaan eenheid:', err);
-    res.status(500).json({ message: 'Fout bij opslaan eenheid'});
+
+  const index = eenheden.findIndex(u => u.id === unit.id);
+  if (index !== -1) {
+    eenheden[index] = unit;
+  } else {
+    eenheden.push(unit);
   }
+
+  res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
 });
 
 // ✅ GET: Alle eenheden ophalen
-app.get('/api/units', authenticateApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('units').where('userid', '==', req.userId).get();
-    const eenheden = snapshot.docs.map(doc => doc.data);
-    req.json(eenheden);
-  } catch (err) {
-    console.error('Fout bij ophalen eenheden:', err);
-    res.status(500).json({ message: 'Fout bij ophalen eenheden' });
-  }
+app.get('/api/units', (req, res) => {
+  res.json(eenheden);
 });
 
 // ✅ POST: Luchtalarm-palen ontvangen vanuit Roblox
@@ -264,47 +224,40 @@ app.get('/api/posten/alarm', (req, res) => {
   res.json(data || {});
 });
 
-app.post('/api/amber', authenticateApiKey, async (req, res) => {
+app.post('/api/amber', (req, res) => {
   const { name, userId, location, description, timestamp } = req.body;
+
   if (!name || !userId || !location || !description || !timestamp) {
     return res.status(400).json({ error: "Ontbrekende velden" });
   }
-  const alert = { name, userId, location, description, timestamp: req.userId };
-  try {
-    await db.collection('amberAlert').add(alert);
-    res.status(201).json({ message: 'Amber Alert opgeslagen', alert });
-  } catch (err) {
-    console.error(' Fout bij opslaan Amber Alert', err);
-    res.status(500).json({ message: 'Fout bij opslaan amber alert' });
-  }
+
+  const alert = { name, userId, location, description, timestamp };
+  amberAlerts.push(alert);
+
+  console.log("✅ Amber Alert opgeslagen:", alert);
+
+  res.status(201).json({ message: "Amber Alert opgeslagen", alert });
 });
 
-app.get('/api/amber', authenticateApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('amberalert').where('userId', '==', req.userId).get();
-    const alerts = snapshot.docs.map(doc => doc.data());
-    res.json(alerts);
-  } catch (err) {
-    console.error(' Fout bij ophalen Amber alert', err);
-    res.status(500).json({ meessage: 'Fout bij ophalen amber alerts' });
-  }
+app.get('/api/amber', (req, res) => {
+  res.json(amberAlerts);
 });
 
 
-// ✅ NL ALERT AANMAKEN
-app.post('/api/nlalert', authenticateApiKey, async (req, res) => {
+// ✅ POST: NLAlert verzenden
+app.post('/api/nlalert', (req, res) => {
   const { title, message, location, timestamp } = req.body;
+
   if (!title || !message || !location || !timestamp) {
-    return res.status(400).json({ error: 'Ontbrekende velden voor NLAlert' });
+    return res.status(400).json({ error: "Ontbrekende velden voor NLAlert" });
   }
-  const alert = { title, message, location, timestamp, userId: req.userId };
-  try {
-    await db.collection('nlAlerts').add(alert);
-    res.status(201).json({ message: 'NLAlert opgeslagen', alert });
-  } catch (err) {
-    console.error('❌ Fout bij opslaan NLAlert:', err);
-    res.status(500).json({ message: 'Fout bij opslaan NLAlert' });
-  }
+
+  const alert = { title, message, location, timestamp };
+  nlAlerts.push(alert);
+
+  console.log("📢 NLAlert opgeslagen:", alert);
+
+  res.status(201).json({ message: "NLAlert opgeslagen", alert });
 });
 
 // ✅ POST: ANPR-trigger vanaf Roblox
@@ -339,18 +292,10 @@ app.post('/api/anpr', (req, res) => {
 });
 
 
-// ✅ NL ALERTS OPHALEN
-app.get('/api/nlalert', authenticateApiKey, async (req, res) => {
-  try {
-    const snapshot = await db.collection('nlAlerts').where('userId', '==', req.userId).get();
-    const alerts = snapshot.docs.map(doc => doc.data());
-    res.json(alerts);
-  } catch (err) {
-    console.error('❌ Fout bij ophalen NLAlerts:', err);
-    res.status(500).json({ message: 'Fout bij ophalen NLAlerts' });
-  }
-});
-
+// Get: Alle NLAlerts ophalen
+app.get('/api/nlalert', (req, res) => {
+  res.json(nlAlerts);
+})
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
