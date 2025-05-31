@@ -13,6 +13,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+let meldingen = [];
+let posten = [];
+let luchtalarmPalen = [];
+let laatsteLuchtalarmActie = null;
+let lastPostAlarm = null;
+
+
 // ✅ Firebase Initialisatie
 const serviceAccount = require('./serviceAccountKey.json');
 
