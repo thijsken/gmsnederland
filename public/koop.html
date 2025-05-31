@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- ✅ Voeg dit toe: -->
+    <link rel="icon" href="favicon.ico.png" type="image/x-icon">
+    <title>GMS Nederland - Geavanceerd Server Beheersysteem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        dark: '#0f172a',
+                        accent: '#1e40af',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .testimonial-card {
+            transition: all 0.3s ease;
+        }
+        .testimonial-card:hover {
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-50 text-gray-800">
+    <!-- Navigation -->
+    <nav class="bg-gray-900 shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <img src="logogmsnederland.png" alt="Logo" class="w-12 h-12"/>
+                <!-- <i class="fas fa-server text-primary text-2xl"></i> -->
+                <span class="text-xl font-bold text-white">GMS Nederland</span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#home" class="text-white hover:text-primary transition">Home</a>
+                <a href="#pakketten" class="text-white hover:text-primary transition">Pakketten</a>
+                <a href="#features" class="text-white hover:text-primary transition">Features</a>
+                <a href="#testimonials" class="text-white hover:text-primary transition">Ervaringen</a>
+                <a href="#contact" class="text-white hover:text-primary transition">Contact</a>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white px-4 pb-4">
+            <a href="#home" class="block py-2 text-dark hover:text-primary transition">Home</a>
+            <a href="#pakketten" class="block py-2 text-dark hover:text-primary transition">Pakketten</a>
+            <a href="#features" class="block py-2 text-dark hover:text-primary transition">Features</a>
+            <a href="#testimonials" class="block py-2 text-dark hover:text-primary transition">Ervaringen</a>
+            <a href="#contact" class="block py-2 text-dark hover:text-primary transition">Contact</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="bg-gradient-to-r from-dark to-accent text-white py-20">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">Beheer je server slim met GMS Nederland</h1>
+                <p class="text-xl mb-8 text-gray-200">Van custom API's tot volledige support – kies jouw pakket en start vandaag nog.</p>
+                <a href="#pakketten" class="bg-white text-primary font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition duration-300 inline-block">Start vanaf €20</a>
+                <div class="mt-8 flex items-center space-x-4">
+                    <div class="flex -space-x-2">
+                        <img src="https://randomuser.me/api/portraits/women/12.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-300">Meer dan <span class="font-bold">500+</span> tevreden gebruikers</p>
+                    </div>
+                </div>
+            </div>
+            <div class="md:w-1/2 flex justify-center">
+                <img src="logogmsnederland.png" alt="Server Illustration" class="w-full max-w-md floating">
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Badges -->
+    <section class="bg-white py-8 shadow-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-alt text-green-500 text-3xl mr-3"></i>
+                    <span class="font-semibold">SSL Beveiligd</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-lock text-green-500 text-3xl mr-3"></i>
+                    <span class="font-semibold">Privacy Proof</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-500 text-3xl mr-3"></i>
+                    <span class="font-semibold">24/7 Support</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-credit-card text-green-500 text-3xl mr-3"></i>
+                    <span class="font-semibold">Veilig Betalen</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Packages Section -->
+    <section id="pakketten" class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-dark mb-4">Kies Jouw Perfecte Pakket</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Of je nu net begint of een professionele server beheert, wij hebben de juiste oplossing voor jou.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Beginner Package -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl">
+                    <div class="bg-gray-100 px-6 py-4">
+                        <h3 class="text-xl font-bold text-dark">Beginnerspakket</h3>
+                        <p class="text-gray-600">Perfect voor starters</p>
+                    </div>
+                    <div class="px-6 py-4">
+                        <div class="mb-6">
+                            <span class="text-3xl font-bold text-dark">€15</span>
+                            <span class="text-gray-600">eenmalig</span>
+                        </div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Map Calls</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Custom API</span>
+                            </li>
+                            <li class="flex items-center text-gray-400">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                <span>Geen updates</span>
+                            </li>
+                            <li class="flex items-center text-gray-400">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                <span>Basis support</span>
+                            </li>
+                        </ul>
+                        <button onclick="openPaymentModal('Beginnerspakket', 15, 'eenmalig')" class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-accent transition">Nu Kopen</button>
+                    </div>
+                </div>
+                
+                <!-- Standard Package -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl transform scale-105 border-2 border-primary relative">
+                    <div class="absolute top-0 right-0 bg-primary text-white px-3 py-1 text-xs font-bold">POPULAIR</div>
+                    <div class="bg-gray-100 px-6 py-4">
+                        <h3 class="text-xl font-bold text-dark">Standaardpakket</h3>
+                        <p class="text-gray-600">Professionele oplossing</p>
+                    </div>
+                    <div class="px-6 py-4">
+                        <div class="mb-6">
+                            <span class="text-3xl font-bold text-dark">€10</span>
+                            <span class="text-gray-600">per maand</span>
+                        </div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Alles van beginnerspakket</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Regelmatige updates</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Verbeterde functionaliteiten</span>
+                            </li>
+                            <li class="flex items-center text-gray-400">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                <span>Geen prioriteitssupport</span>
+                            </li>
+                        </ul>
+                        <button onclick="openPaymentModal('Standaardpakket', 10, 'per maand')" class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-accent transition">Nu Kopen</button>
+                    </div>
+                </div>
+                
+                <!-- Full Package -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl">
+                    <div class="bg-gray-100 px-6 py-4">
+                        <h3 class="text-xl font-bold text-dark">Full-in Pakket</h3>
+                        <p class="text-gray-600">Complete oplossing</p>
+                    </div>
+                    <div class="px-6 py-4">
+                        <div class="mb-6">
+                            <span class="text-3xl font-bold text-dark">€20</span>
+                            <span class="text-gray-600">per maand</span>
+                        </div>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Alles van standaardpakket</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Prioriteitssupport via Discord</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Directe toegang tot nieuwe functies</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span>Volledige updates & bugfixes</span>
+                            </li>
+                        </ul>
+                        <button onclick="openPaymentModal('Full-in Pakket', 20, 'per maand')" class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-accent transition">Nu Kopen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-dark mb-4">Krachtige Features</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Ontdek wat GMS Nederland jouw serverbeheer zo veel makkelijker maakt</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-code text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Custom API</h3>
+                    <p class="text-gray-600">Maak gebruik van onze krachtige API om je server precies zo aan te passen als jij wilt.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-sync-alt text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Automatische Updates</h3>
+                    <p class="text-gray-600">Blijf up-to-date met de nieuwste features en beveiligingsupdates zonder gedoe.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-headset text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">24/7 Support</h3>
+                    <p class="text-gray-600">Onze experts staan altijd voor je klaar om vragen te beantwoorden en problemen op te lossen.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-shield-alt text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Geavanceerde Beveiliging</h3>
+                    <p class="text-gray-600">Bescherm je server tegen DDoS-aanvallen en andere bedreigingen met onze geavanceerde beveiliging.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Gedetailleerde Statistieken</h3>
+                    <p class="text-gray-600">Krijg inzicht in je serverprestaties met uitgebreide statistieken en rapportages.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-gray-50 rounded-lg p-6 feature-card transition duration-300">
+                    <div class="bg-primary bg-opacity-10 text-primary w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-plug text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Eenvoudige Integraties</h3>
+                    <p class="text-gray-600">Koppel eenvoudig met populaire platformen zoals Discord, Twitch en meer.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-dark mb-4">Wat Onze Klanten Zeggen</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Echte ervaringen van serverbeheerders zoals jij</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-white p-6 rounded-lg shadow-md testimonial-card">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Kevin" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold">Kevin</h4>
+                            <p class="text-gray-600 text-sm">Serverbeheerder</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">"Zonder GMS zou ik chaos hebben. Het systeem heeft mijn workflow compleet veranderd en bespaart me uren per week!"</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 2 -->
+                <div class="bg-white p-6 rounded-lg shadow-md testimonial-card">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sarah" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold">Sarah</h4>
+                            <p class="text-gray-600 text-sm">Community Manager</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">"De prioriteitssupport is fantastisch. Binnen minuten antwoord op mijn vragen, zelfs 's nachts. Echt onmisbaar voor onze community!"</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="bg-white p-6 rounded-lg shadow-md testimonial-card">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/men/67.jpg" alt="Mike" class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold">Mike</h4>
+                            <p class="text-gray-600 text-sm">Game Developer</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">"De custom API heeft me geholpen om unieke features te bouwen voor onze game. Flexibel, betrouwbaar en superdocumentatie!"</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 bg-gradient-to-r from-dark to-accent text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Klaar om je serverbeheer naar een hoger niveau te tillen?</h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto text-gray-200">Start vandaag nog en ervaar het gemak van GMS Nederland.</p>
+            <a href="#pakketten" class="bg-white text-primary font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition duration-300 inline-block">Kies Jouw Pakket</a>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-dark mb-4">Contact & Support</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">We staan altijd voor je klaar. Neem contact met ons op via onderstaande kanalen.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+                <div>
+                    <h3 class="text-xl font-bold text-dark mb-4">Directe Support</h3>
+                    
+                    <div class="flex items-start mb-6">
+                        <div class="bg-primary bg-opacity-10 text-primary w-10 h-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fab fa-discord"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-dark">Discord Server</h4>
+                            <p class="text-gray-600">Join onze Discord voor directe support</p>
+                            <a href="https://discord.gg/tGSPvXCX" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Join Nu</a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start mb-6">
+                        <div class="bg-primary bg-opacity-10 text-primary w-10 h-10 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-dark">E-mail</h4>
+                            <p class="text-gray-600">Stuur ons een e-mail voor vragen</p>
+                            <a href="mailto:gmsnederlandsupprot@gmail.com" class="text-primary hover:underline">support@gmsnederland.nl</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-dark mb-4">Veelgestelde Vragen</h3>
+                    
+                    <div class="mb-4">
+                        <button class="faq-btn w-full text-left flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                            <span class="font-medium">Hoe snel kan ik beginnen na aankoop?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                        </button>
+                        <div class="faq-content hidden px-4 py-2 text-gray-600">
+                            Na betaling ontvang je direct toegang tot het systeem. De installatie duurt meestal minder dan 5 minuten.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <button class="faq-btn w-full text-left flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                            <span class="font-medium">Kan ik upgraden naar een ander pakket?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                        </button>
+                        <div class="faq-content hidden px-4 py-2 text-gray-600">
+                            Ja, je kunt op elk moment upgraden. Het verschil in prijs wordt verrekend met je volgende betaling.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <button class="faq-btn w-full text-left flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                            <span class="font-medium">Is er een proefperiode beschikbaar?</span>
+                            <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                        </button>
+                        <div class="faq-content hidden px-4 py-2 text-gray-600">
+                            We bieden een 14-dagen niet-goed-geld-terug garantie. Als je niet tevreden bent, krijg je je geld terug.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-server text-primary text-2xl"></i>
+                        <span class="text-xl font-bold">GMS Nederland</span>
+                    </div>
+                    <p class="text-gray-400">Het meest geavanceerde beheersysteem voor game- en communityservers.</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Pakketten</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Beginnerspakket</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Standaardpakket</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Full-in Pakket</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Bedrijf</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="window.location.href='startchat.html'; return false;" class="text-gray-400 hover:text-white transition">Support</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Over Ons</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Vacatures</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Juridisch</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Algemene Voorwaarden</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Privacybeleid</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Cookiebeleid</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-6 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-gray-400">© 2025 GMS Nederland. KVK: Nog niet | BTW: NL123456789B01</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-discord"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg max-w-md w-full mx-4 overflow-hidden">
+            <div class="bg-primary text-white px-6 py-4">
+                <h3 class="text-xl font-bold" id="modal-title">Beginnerspakket - €15 eenmalig</h3>
+            </div>
+            <div class="p-6">
+                <div class="mb-6">
+                    <h4 class="font-bold mb-3">Betaalmethode</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="border border-gray-300 rounded-lg py-2 px-3 flex items-center justify-center hover:border-primary transition">
+                            <i class="fab fa-ideal text-2xl mr-2"></i>
+                            <span>iDEAL</span>
+                        </button>
+                        <button class="border border-gray-300 rounded-lg py-2 px-3 flex items-center justify-center hover:border-primary transition">
+                            <i class="fab fa-paypal text-2xl mr-2"></i>
+                            <span>PayPal</span>
+                        </button>
+                        <button class="border border-gray-300 rounded-lg py-2 px-3 flex items-center justify-center hover:border-primary transition">
+                            <i class="fab fa-cc-visa text-2xl mr-2"></i>
+                            <span>Creditcard</span>
+                        </button>
+                        <button class="border border-gray-300 rounded-lg py-2 px-3 flex items-center justify-center hover:border-primary transition">
+                            <i class="fas fa-credit-card text-2xl mr-2"></i>
+                            <span>Bancontact</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h4 class="font-bold mb-3">Persoonlijke Gegevens</h4>
+                    <div class="space-y-3">
+                        <input type="text" placeholder="Volledige naam" class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <input type="email" placeholder="E-mailadres" class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="terms" class="mr-2">
+                    <label for="terms" class="text-sm text-gray-600">Ik ga akkoord met de <a href="#" class="text-primary hover:underline">Algemene Voorwaarden</a></label>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button onclick="closePaymentModal()" class="border border-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-100 transition">Annuleren</button>
+                    <button class="bg-primary text-white py-2 px-6 rounded-lg hover:bg-accent transition">Nu Betalen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stripe = Stripe('pk_test_...'); // <-- Je Publishable Key hier
+        // Mobile menu toggle
+        document.getElementById('menu-btn').addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('i');
+                
+                // Toggle content
+                content.classList.toggle('hidden');
+                
+                // Rotate icon
+                if (content.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // Payment modal functions
+        function openPaymentModal(packageName, price, frequency) {
+            document.getElementById('modal-title').textContent = `${packageName} - €${price} ${frequency}`;
+            document.getElementById('payment-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('payment-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePaymentModal();
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+                
+                // Close mobile menu if open
+                if (!document.getElementById('mobile-menu').classList.contains('hidden')) {
+                    document.getElementById('mobile-menu').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
