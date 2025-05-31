@@ -87,28 +87,28 @@ app.get('/api/meldingen', (req, res) => {
     });
 });
 
-app.patch('/api/meldingen/:timestamp/status', (req, res) => {
-  const { timestamp } = req.params;
+app.patch('/api/meldingen/:meldingId/status', async (req, res) => {
+  const { meldingId } = req.params;
   const { status } = req.body;
 
-  console.log(`🔧 PATCH aanvraag ontvangen voor melding ${timestamp} met status "${status}"`);
-
   if (!["new", "accepted", "assigned", "closed"].includes(status)) {
-    console.warn(`❌ Ongeldige status ontvangen: ${status}`);
     return res.status(400).json({ message: 'Ongeldige status' });
   }
 
-  const melding = meldingen.find(m => String(m.timestamp) === timestamp);
-  if (!melding) {
-    console.warn(`⚠️ Melding met timestamp ${timestamp} niet gevonden`);
-    return res.status(404).json({ message: 'Melding niet gevonden' });
+  try {
+    const ref = db.ref(`servers/${req.query.serverId}/meldingen/${meldingId}`);
+    const snapshot = await ref.once('value');
+    if (!snapshot.exists()) {
+      return res.status(404).json({ message: 'Melding niet gevonden' });
+    }
+    await ref.update({ status });
+    const updated = await ref.once('value');
+    res.json({ message: 'Status bijgewerkt', melding: updated.val() });
+  } catch (error) {
+    console.error('Fout bij updaten status melding:', error);
+    res.status(500).json({ message: 'Fout bij updaten status' });
   }
-
-  melding.status = status;
-  console.log(`✅ Status van melding ${timestamp} succesvol gewijzigd naar "${status}"`);
-  res.json({ message: 'Status bijgewerkt', melding });
 });
-
 
 // ✅ POST: Eenheid aanmaken of bijwerken
 app.post('/api/units', (req, res) => {
