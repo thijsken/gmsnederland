@@ -1,67 +1,25 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const crypto = require('crypto');
-const admin = require('firebase-admin');
+const { error } = require('console');
 
 const app = express();
-const Stripe = require('stripe');
-const stripe = Stripe('sk_test_51RUYjVPLQUgW1JNriYW9FWG6YI33hjKKK0OvILsNUhM83uevbUcsqTZnIv96p47L1gNAwwHMtZg8Y1sh3xstSKES00jfzPMuZk'); // <-- Je Secret Key hier
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Firebase Initialisatie
-const serviceAccount = require('./serviceAccountKey.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-
-app.post('/create-payment-intent', async (req, res) => {
-  const { amount, packageName } = req.body;
-
-  try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Bedrag in centen
-      currency: 'eur',
-      payment_method_types: ['ideal'],
-      description: `Betaling voor ${packageName}`,
-    });
-
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (err) {
-    res.status(500).send({ error: err.message });
-  }
-});
-
-app.listen(4242, () => console.log('Server draait op http://localhost:4242'));
-
-// 🔐 API Key genereren en opslaan
-app.post('/api/apikey/generate', async (req, res) => {
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ message: 'userId is verplicht' });
-  }
-
-  try {
-    const apiKey = crypto.randomUUID();
-    await db.collection('apiKeys').doc(userId).set({ apiKey });
-
-    console.log(`🔑 API key opgeslagen voor gebruiker ${userId}`);
-    res.status(201).json({ apiKey });
-  } catch (err) {
-    console.error('❌ Fout bij opslaan API key:', err);
-    res.status(500).json({ message: 'Fout bij opslaan API key' });
-  }
-});
+// 🧠 Tijdelijke opslag
+let meldingen = [];
+let eenheden = [];
+let luchtalarmPalen = [];
+let posten = [];
+let amberAlerts = [];
+let nlAlerts = [];
+let alarmQueue = [];
+let laatsteLuchtalarmActie = null;
+let lastPostAlarm = null;
 
 // 🌍 Dashboard root
 app.get('/', (req, res) => {
