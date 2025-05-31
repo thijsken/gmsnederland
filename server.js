@@ -1,3 +1,13 @@
+const admin = require('firebase-admin');
+const serviceAccount = require('./path/to/serviceAccountKey.json'); // pas aan naar jouw bestand
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: 'https://gmsnederland-3029e-default-rtdb.europe-west1.firebasedatabase.app' // pas aan naar jouw database URL
+});
+
+const db = admin.database();
+
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -28,22 +38,53 @@ app.get('/', (req, res) => {
 
 // 📥 POST: Melding ontvangen
 app.post('/api/meldingen', (req, res) => {
-  const melding = req.body;
-  if (!melding || !melding.type || !melding.location || !melding.playerName) {
-    return res.status(400).json({ message: 'Fout: ongeldige melding' });
+  const { serverId, type, location, playerName } = req.body;
+
+  if (!serverId || !type || !location || !playerName) {
+    return res.status(400).json({ message: 'Fout: ongeldige melding of geen serverId' });
   }
 
-  melding.timestamp = Date.now();
-  melding.status = "new"; // voeg status toe
-  meldingen.push(melding);
-  console.log('📥 Nieuwe melding ontvangen:', melding);
+  const melding = {
+    type,
+    location,
+    playerName,
+    timestamp: Date.now(),
+    status: "new"
+  };
 
-  res.status(201).json({ message: '✅ Melding ontvangen', data: melding });
+  // Opslaan in Firebase onder per server path
+  const ref = db.ref(`servers/${serverId}/meldingen`);
+  ref.push(melding)
+    .then(() => {
+      console.log(`📥 Nieuwe melding opgeslagen voor server ${serverId}`, melding);
+      res.status(201).json({ message: '✅ Melding ontvangen en opgeslagen', data: melding });
+    })
+    .catch(error => {
+      console.error('Fout bij opslaan melding:', error);
+      res.status(500).json({ message: 'Fout bij opslaan melding' });
+    });
 });
+
 
 // 📤 GET: Alle meldingen ophalen
 app.get('/api/meldingen', (req, res) => {
-  res.json(meldingen);
+  const serverId = req.query.serverId;
+  if (!serverId) {
+    return res.status(400).json({ message: 'serverId is verplicht' });
+  }
+
+  const ref = db.ref(`servers/${serverId}/meldingen`);
+  ref.once('value')
+    .then(snapshot => {
+      const data = snapshot.val() || {};
+      // Omdat data een object is van keys => values, kun je het omzetten naar array:
+      const meldingen = Object.values(data);
+      res.json(meldingen);
+    })
+    .catch(error => {
+      console.error('Fout bij ophalen meldingen:', error);
+      res.status(500).json({ message: 'Fout bij ophalen meldingen' });
+    });
 });
 
 app.patch('/api/meldingen/:timestamp/status', (req, res) => {
@@ -71,20 +112,23 @@ app.patch('/api/meldingen/:timestamp/status', (req, res) => {
 
 // ✅ POST: Eenheid aanmaken of bijwerken
 app.post('/api/units', (req, res) => {
-  const unit = req.body;
+  const { serverId, id, type, location } = req.body;
 
-  if (!unit || !unit.id || !unit.type || !unit.location) {
-    return res.status(400).json({ message: 'Ongeldige eenheid' });
+  if (!serverId || !id || !type || !location) {
+    return res.status(400).json({ message: 'Ongeldige eenheid of geen serverId' });
   }
 
-  const index = eenheden.findIndex(u => u.id === unit.id);
-  if (index !== -1) {
-    eenheden[index] = unit;
-  } else {
-    eenheden.push(unit);
-  }
+  const ref = db.ref(`servers/${serverId}/units/${id}`);
+  const unit = { id, type, location };
 
-  res.status(200).json({ message: 'Eenheid bijgewerkt', data: unit });
+  ref.set(unit)
+    .then(() => {
+      res.status(200).json({ message: 'Eenheid opgeslagen', data: unit });
+    })
+    .catch(error => {
+      console.error('Fout bij opslaan unit:', error);
+      res.status(500).json({ message: 'Fout bij opslaan unit' });
+    });
 });
 
 // ✅ GET: Alle eenheden ophalen
